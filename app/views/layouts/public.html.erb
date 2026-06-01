@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <title><%= content_for(:title) { "Pedido de Gas" } %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+    <meta charset="utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#020617"> <!-- slate-950 -->
+    <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json, start_url: @company ? new_public_order_customer_session_path(company_slug: @company.slug) : "/", name: @company&.name || "Pedido de Gas", theme_color: "#020617") %>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= vite_client_tag %>
+    <%= vite_react_refresh_tag %>
+    <%= vite_stylesheet_tag 'application', data: { "turbo-track": "reload" } %>
+    <%= vite_javascript_tag 'application' %>
+  </head>
+  <body>
+    <%= yield %>
+  </body>
+</html>

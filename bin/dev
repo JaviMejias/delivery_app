@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Load nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+if command -v nvm &> /dev/null; then
+  nvm use 22 --silent
+fi
+
+# Start Vite dev server and Rails server together
+if command -v foreman &> /dev/null; then
+  exec foreman start -f Procfile.dev "$@"
+else
+  echo "Install foreman: gem install foreman"
+  echo ""
+  echo "Or start manually in separate terminals:"
+  echo "  Terminal 1: bin/vite dev"
+  echo "  Terminal 2: bin/rails server"
+fi

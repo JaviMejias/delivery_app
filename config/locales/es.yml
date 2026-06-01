@@ -1,0 +1,30 @@
+es:
+  activerecord:
+    models:
+      user: "Usuario"
+      public_order_customer: "Cliente"
+    attributes:
+      user:
+        rut: "RUT"
+        phone: "Teléfono"
+        license_type: "Tipo de licencia"
+        license_expiration: "Fecha de vencimiento"
+        first_name: "Nombre"
+        last_name: "Apellido"
+        email: "Correo electrónico"
+        password: "Contraseña"
+        role: "Rol"
+      public_order_customer:
+        first_name: "Nombre"
+        last_name: "Apellido"
+        email: "Correo electrónico"
+        phone: "Teléfono"
+        password: "Contraseña"
+        password_confirmation: "Confirmación de contraseña"
+  errors:
+    messages:
+      blank: "no puede estar en blanco"
+      required: "es obligatorio"
+      invalid: "no es válido"
+      taken: "ya está en uso"
+      confirmation: "no coincide con la confirmación"

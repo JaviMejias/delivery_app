@@ -1,0 +1,23 @@
+{
+  "name": "<%= params[:name] || 'StockFlow' %>",
+  "short_name": "<%= params[:name] || 'StockFlow' %>",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "<%= params[:start_url] || '/' %>",
+  "display": "standalone",
+  "scope": "/",
+  "description": "Aplicación Web",
+  "theme_color": "<%= params[:theme_color] || '#4f46e5' %>",
+  "background_color": "<%= params[:theme_color] || '#4f46e5' %>"
+}
