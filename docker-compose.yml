@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: stockflow
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: stock_flow_production
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "3000:80" # El contenedor expone el puerto 80 por Thruster, lo mapeamos al 3000
+    depends_on:
+      - db
+    volumes:
+      - ./config/master.key:/rails/config/master.key:ro
+      - storage_data:/rails/storage
+    environment:
+      - RAILS_ENV=production
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=stockflow
+      - POSTGRES_PASSWORD=secretpassword
+      - SECRET_KEY_BASE=a_very_long_random_secret_key_for_production_replace_this
+    command: bash -c "bundle exec rails db:prepare && ./bin/thrust ./bin/rails server"
+
+volumes:
+  db_data:
+  storage_data:
