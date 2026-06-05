@@ -29,9 +29,9 @@ class StockTransfersController < ApplicationController
     transfer = StockTransfer.includes(:source_warehouse, :destination_warehouse)
                             .find(params[:id])
 
-    if params[:format] == 'pdf'
+    if params[:format] == "pdf"
       pdf_data = GenerateStockTransferPdfService.new(transfer).call
-      send_data pdf_data, filename: "Guia-Despacho-#{transfer.id.to_s.rjust(4, '0')}.pdf", type: 'application/pdf', disposition: 'inline'
+      send_data pdf_data, filename: "Guia-Despacho-#{transfer.id.to_s.rjust(4, '0')}.pdf", type: "application/pdf", disposition: "inline"
     else
       items_data = transfer.stock_transfer_items.map do |ti|
         item = ti.item

@@ -15,11 +15,11 @@ interface CompanyFormProps {
 
 export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }: CompanyFormProps) {
   return (
-    <Card className={editingCompany ? 'ring-2 ring-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
+    <Card className={editingCompany ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
       <Card.Body>
         <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${
           editingCompany 
-            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
+            ? 'bg-primary-500/10 border-primary-500/30 text-primary-400' 
             : 'bg-[var(--sf-surface)] border-[var(--sf-border)] text-[var(--sf-text-main)]'
         }`}>
           {editingCompany ? <Pencil className="w-5 h-5 shrink-0" /> : <Building2 className="w-5 h-5 shrink-0 text-[var(--sf-text-muted)]" />}
@@ -40,7 +40,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
               type="text"
               value={form.data.name}
               onChange={e => form.setData('name', e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
               required
               placeholder="Ej. Gas Norte SpA"
             />
@@ -67,7 +67,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
                     { number: '', label: '' }
                   ])
                 }}
-                className="text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold"
+                className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300 font-bold"
               >
                 <Plus className="w-3 h-3" /> Añadir
               </button>
@@ -96,7 +96,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
                           form.setData('company_phones_attributes', newPhones)
                         }}
                         placeholder="Etiqueta (Ej: Ventas, Emergencias...)"
-                        className="w-full px-3 py-1.5 text-xs bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-lg text-[var(--sf-text-main)] focus:ring-1 focus:ring-indigo-500/50 transition-shadow"
+                        className="w-full px-3 py-1.5 text-xs bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-lg text-[var(--sf-text-main)] focus:ring-1 focus:ring-primary-500/50 transition-shadow"
                       />
                     </div>
                     <button
@@ -131,7 +131,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
               type="email"
               value={form.data.email}
               onChange={e => form.setData('email', e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
               placeholder="Ej. contacto@empresa.cl"
             />
             {form.errors.email && <div className="text-red-400 text-xs mt-1">{form.errors.email}</div>}
@@ -143,7 +143,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
               type="text"
               value={form.data.business_activity}
               onChange={e => form.setData('business_activity', e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
               placeholder="Ej. Venta al por menor de gas licuado"
             />
           </div>
@@ -154,7 +154,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
               type="text"
               value={form.data.address}
               onChange={e => form.setData('address', e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
               placeholder="Ej. Av. Siempreviva 123"
             />
           </div>
@@ -165,7 +165,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
               type="text"
               value={form.data.legal_representative}
               onChange={e => form.setData('legal_representative', e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
               placeholder="Ej. Juan Pérez"
             />
           </div>
@@ -177,7 +177,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
                 type="file"
                 accept=".png,.jpg,.jpeg"
                 onChange={e => form.setData('logo', e.target.files ? e.target.files[0] : null)}
-                className="w-full text-sm text-[var(--sf-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20"
+                className="w-full text-sm text-[var(--sf-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-500/10 file:text-primary-400 hover:file:bg-primary-500/20"
               />
               {editingCompany?.logo_url && !form.data.logo && (
                 <div className="mt-2 text-xs text-[var(--sf-text-muted)]">
@@ -206,7 +206,7 @@ export default function CompanyForm({ form, editingCompany, onSubmit, onCancel }
             <button
               type="submit"
               disabled={form.processing}
-              className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+              className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20"
             >
               <Save className="w-4 h-4" />
               {editingCompany ? 'Actualizar Empresa' : 'Registrar Empresa'}

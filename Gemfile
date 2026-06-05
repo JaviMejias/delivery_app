@@ -53,6 +53,9 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec for testing
+  gem "rspec-rails", "~> 6.1.0"
 end
 
 group :development do
@@ -64,7 +67,7 @@ gem "acts_as_tenant", "~> 1.0"
 
 gem "pagy", "~> 43.5"
 
-gem "faker", "~> 3.8", groups: [:development, :test]
+gem "faker", "~> 3.8", groups: [ :development, :test ]
 
 # PDF Generation
 gem "prawn"
@@ -80,3 +83,6 @@ gem "matrix"
 gem "caxlsx"
 
 gem "image_processing", "~> 2.0"
+
+gem "capybara", "~> 3.40", group: :test
+gem "selenium-webdriver", "~> 4.44", group: :test

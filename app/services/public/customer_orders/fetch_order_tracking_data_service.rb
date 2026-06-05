@@ -3,21 +3,21 @@ module Public
     class FetchOrderTrackingDataService
       def self.call(order, company)
         truck_data = nil
-        if order.truck&.latitude.present?
+        if order.truck.present?
           truck_data = {
-            latitude: order.truck.latitude.to_f,
-            longitude: order.truck.longitude.to_f,
+            latitude: order.truck.latitude.present? ? order.truck.latitude.to_f : nil,
+            longitude: order.truck.longitude.present? ? order.truck.longitude.to_f : nil,
             plate_number: order.truck.plate_number,
-            driver_name: order.truck.driver&.full_name || 'Sin Chofer',
+            driver_name: order.truck.driver&.full_name || "Sin Chofer",
             route_points: order.truck.route_points ? JSON.parse(order.truck.route_points) : nil,
             departure_time: order.truck.departure_time&.iso8601
           }
         end
-        
+
         available_trucks_count = Truck.active
           .where(company_id: company.id)
           .where.not(latitude: nil)
-          .where.not(id: CustomerOrder.where(status: [:accepted, :in_transit]).select(:truck_id).compact)
+          .where.not(id: CustomerOrder.where(status: [ :accepted, :in_transit ]).select(:truck_id).compact)
           .count
 
         {

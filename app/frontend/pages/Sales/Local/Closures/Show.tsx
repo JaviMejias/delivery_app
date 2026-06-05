@@ -1,7 +1,9 @@
-import { Head, Link } from '@inertiajs/react'
+import { Head } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
+import Table from '@/components/Table'
+import BackButton from '@/components/BackButton'
 import { FileText } from 'lucide-react'
 
 interface LocalClosure {
@@ -55,70 +57,64 @@ export default function LocalClosureShow({ closure }: Props) {
           description={`Realizado el ${new Date(closure.created_at).toLocaleString()}`}
           color="indigo"
         >
-          <Link
-            href="/sales/local/closures"
-            className="px-4 py-2 bg-[var(--sf-bg)] text-[var(--sf-text-main)] font-medium rounded-lg hover:bg-[var(--sf-surface)] border border-[var(--sf-border)] transition-colors"
-          >
-            ← Volver a Historial
-          </Link>
+          <BackButton href="/sales/local/closures" />
         </PageHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card className="overflow-hidden">
               <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-bg)] flex justify-between items-center">
                 <h2 className="font-semibold text-[var(--sf-text-main)]">Detalle de Valores</h2>
                 <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold uppercase">
                   Cerrado ✓
                 </span>
               </div>
-              <div className="p-0">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[var(--sf-bg)]/50 border-b border-[var(--sf-border)]">
-                      <th className="p-4 font-medium text-[var(--sf-text-muted)] w-1/3">Método</th>
-                      <th className="p-4 font-medium text-[var(--sf-text-muted)] text-right">Sistema</th>
-                      <th className="p-4 font-medium text-[var(--sf-text-muted)] text-right">Declarado</th>
-                      <th className="p-4 font-medium text-[var(--sf-text-muted)] text-right">Diferencia</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--sf-border)]">
-                    <tr>
-                      <td className="p-4 font-medium text-[var(--sf-text-main)]">💵 Efectivo</td>
-                      <td className="p-4 text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_cash)}</td>
-                      <td className="p-4 text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_cash)}</td>
-                      <td className={`p-4 text-right font-bold ${getDiffColor(closure.system_cash, closure.declared_cash)}`}>
+              <div className="overflow-x-auto">
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th className="w-1/3">Método</Table.Th>
+                      <Table.Th className="text-right">Sistema</Table.Th>
+                      <Table.Th className="text-right">Declarado</Table.Th>
+                      <Table.Th className="text-right">Diferencia</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    <Table.Tr>
+                      <Table.Td className="font-medium text-[var(--sf-text-main)]">💵 Efectivo</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_cash)}</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_cash)}</Table.Td>
+                      <Table.Td className={`text-right font-bold ${getDiffColor(closure.system_cash, closure.declared_cash)}`}>
                         {getDiffText(closure.system_cash, closure.declared_cash)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-4 font-medium text-[var(--sf-text-main)]">💳 Tarjeta</td>
-                      <td className="p-4 text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_card)}</td>
-                      <td className="p-4 text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_card)}</td>
-                      <td className={`p-4 text-right font-bold ${getDiffColor(closure.system_card, closure.declared_card)}`}>
+                      </Table.Td>
+                    </Table.Tr>
+                    <Table.Tr>
+                      <Table.Td className="font-medium text-[var(--sf-text-main)]">💳 Tarjeta</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_card)}</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_card)}</Table.Td>
+                      <Table.Td className={`text-right font-bold ${getDiffColor(closure.system_card, closure.declared_card)}`}>
                         {getDiffText(closure.system_card, closure.declared_card)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-4 font-medium text-[var(--sf-text-main)]">🏦 Transferencia</td>
-                      <td className="p-4 text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_transfer)}</td>
-                      <td className="p-4 text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_transfer)}</td>
-                      <td className={`p-4 text-right font-bold ${getDiffColor(closure.system_transfer, closure.declared_transfer)}`}>
+                      </Table.Td>
+                    </Table.Tr>
+                    <Table.Tr>
+                      <Table.Td className="font-medium text-[var(--sf-text-main)]">🏦 Transferencia</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-muted)] font-mono">{formatCLP(closure.system_transfer)}</Table.Td>
+                      <Table.Td className="text-right text-[var(--sf-text-main)] font-bold">{formatCLP(closure.declared_transfer)}</Table.Td>
+                      <Table.Td className={`text-right font-bold ${getDiffColor(closure.system_transfer, closure.declared_transfer)}`}>
                         {getDiffText(closure.system_transfer, closure.declared_transfer)}
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-[var(--sf-bg)] border-t-2 border-[var(--sf-border)]">
-                      <td className="p-4 font-bold text-[var(--sf-text-main)]">TOTAL</td>
-                      <td className="p-4 text-right text-indigo-400 font-bold text-lg">{formatCLP(closure.system_total)}</td>
-                      <td className="p-4 text-right text-[var(--sf-text-main)] font-bold text-lg">{formatCLP(closure.declared_total)}</td>
-                      <td className={`p-4 text-right font-bold text-lg ${getDiffColor(closure.system_total, closure.declared_total)}`}>
+                      </Table.Td>
+                    </Table.Tr>
+                    
+                    <tr className="bg-primary-500/5 border-t-2 border-primary-500/20">
+                      <td className="px-6 py-4 font-bold text-primary-400 text-right uppercase text-sm">TOTAL</td>
+                      <td className="px-6 py-4 text-right text-primary-400 font-bold text-lg">{formatCLP(closure.system_total)}</td>
+                      <td className="px-6 py-4 text-right text-primary-400 font-black text-lg">{formatCLP(closure.declared_total)}</td>
+                      <td className={`px-6 py-4 text-right font-black text-lg ${getDiffColor(closure.system_total, closure.declared_total)}`}>
                         {getDiffText(closure.system_total, closure.declared_total)}
                       </td>
                     </tr>
-                  </tfoot>
-                </table>
+                  </Table.Tbody>
+                </Table>
               </div>
             </Card>
           </div>

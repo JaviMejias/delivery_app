@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_04_150500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -248,6 +248,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
     t.index ["material_category_id"], name: "index_materials_on_material_category_id"
   end
 
+  create_table "notifications", force: :cascade do |t|
+    t.string "action_url"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.text "message"
+    t.string "notification_type"
+    t.datetime "read_at"
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["company_id"], name: "index_notifications_on_company_id"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
   create_table "price_lists", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.boolean "available_for_local", default: false
@@ -281,6 +295,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
     t.bigint "brand_id", null: false
     t.bigint "company_id"
     t.datetime "created_at", null: false
+    t.integer "critical_stock_threshold", default: 20, null: false
     t.bigint "material_id", null: false
     t.string "name"
     t.string "sku"
@@ -321,6 +336,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
     t.decimal "tax_amount", precision: 12, scale: 2, default: "0.0"
     t.decimal "total_amount", precision: 12, scale: 2, default: "0.0"
     t.datetime "updated_at", null: false
+    t.index ["company_id", "supplier_id", "document_type", "document_number"], name: "index_purchase_documents_uniqueness", unique: true, where: "((document_number IS NOT NULL) AND ((document_number)::text <> ''::text) AND (status <> 3))"
     t.index ["company_id"], name: "index_purchase_documents_on_company_id"
     t.index ["purchase_order_id"], name: "index_purchase_documents_on_purchase_order_id"
     t.index ["reference_document_id"], name: "index_purchase_documents_on_reference_document_id"
@@ -352,6 +368,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_purchase_orders_on_company_id"
     t.index ["supplier_id"], name: "index_purchase_orders_on_supplier_id"
+  end
+
+  create_table "route_settlement_expenses", force: :cascade do |t|
+    t.decimal "amount"
+    t.datetime "created_at", null: false
+    t.string "description"
+    t.string "payment_method"
+    t.bigint "route_settlement_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["route_settlement_id"], name: "index_route_settlement_expenses_on_route_settlement_id"
   end
 
   create_table "route_settlement_items", force: :cascade do |t|
@@ -463,8 +489,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
   create_table "trucks", force: :cascade do |t|
     t.boolean "active"
     t.bigint "base_warehouse_id"
+    t.date "circulation_permit_date"
     t.bigint "company_id", null: false
     t.datetime "created_at", null: false
+    t.integer "current_km"
     t.datetime "departure_time"
     t.string "destination_address"
     t.string "destination_client_name"
@@ -473,11 +501,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
     t.bigint "driver_id"
     t.string "gps_device_token"
     t.datetime "gps_last_updated_at"
+    t.boolean "has_gps", default: false
     t.decimal "latitude", precision: 10, scale: 6
     t.decimal "longitude", precision: 10, scale: 6
+    t.integer "mileage_update_frequency", default: 0
+    t.integer "next_maintenance_km"
     t.string "plate_number"
     t.integer "route_current_index", default: 0
     t.text "route_points"
+    t.date "technical_revision_date"
     t.datetime "updated_at", null: false
     t.bigint "warehouse_id", null: false
     t.index ["base_warehouse_id"], name: "index_trucks_on_base_warehouse_id"
@@ -549,6 +581,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
   add_foreign_key "material_categories", "companies"
   add_foreign_key "materials", "companies"
   add_foreign_key "materials", "material_categories"
+  add_foreign_key "notifications", "companies"
+  add_foreign_key "notifications", "users"
   add_foreign_key "price_lists", "companies"
   add_foreign_key "product_prices", "companies"
   add_foreign_key "product_prices", "price_lists"
@@ -565,6 +599,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_212839) do
   add_foreign_key "purchase_order_items", "purchase_orders"
   add_foreign_key "purchase_orders", "companies"
   add_foreign_key "purchase_orders", "suppliers"
+  add_foreign_key "route_settlement_expenses", "route_settlements"
   add_foreign_key "route_settlement_items", "price_lists"
   add_foreign_key "route_settlement_items", "products"
   add_foreign_key "route_settlement_items", "route_settlements"

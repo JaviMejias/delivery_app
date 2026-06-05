@@ -20,6 +20,6 @@ class LocalSale < ApplicationRecord
 
   scope :completed, -> { where(status: :completed) }
   scope :in_date_range, ->(start_date, end_date) { where(created_at: start_date.beginning_of_day..end_date.end_of_day) }
-  scope :search_by_query, ->(q) { joins(:warehouse).where('local_sales.id::text ILIKE :q OR warehouses.name ILIKE :q', q: "%#{q}%") if q.present? }
-  scope :with_details, -> { includes(:warehouse, local_sale_items: { product: [:material, :brand] }) }
+  scope :search_by_query, ->(q) { joins(:warehouse).where("local_sales.id::text ILIKE :q OR ('VTA-' || LPAD(local_sales.id::text, 4, '0')) ILIKE :q OR warehouses.name ILIKE :q", q: "%#{q}%") if q.present? }
+  scope :with_details, -> { includes(:warehouse, local_sale_items: { product: [ :material, :brand ] }) }
 end

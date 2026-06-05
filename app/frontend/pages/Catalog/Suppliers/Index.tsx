@@ -1,13 +1,13 @@
 import { useState, useRef } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
-import Swal from 'sweetalert2'
+import { confirmDelete } from '@/utils/alerts'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import Modal from '@/components/Modal'
 import Pagination from '@/components/Pagination'
-import SearchBar from '@/components/SearchBar'
+import { TableFilters } from '@/components/TableFilters'
 import { formatRut, formatPhone } from '@/utils/formatters'
 import RutInput from '@/components/RutInput'
 import PhoneInput from '@/components/PhoneInput'
@@ -31,7 +31,17 @@ interface Props {
 
 export default function SuppliersIndex({ suppliers, pagination, currentSearch }: Props) {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [search, setSearch] = useState(currentSearch || '')
+  const [isFiltering, setIsFiltering] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const applyFilters = () => {
+    router.get('/catalog/suppliers', { search }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
+  }
 
   const form = useForm({
     name: '',
@@ -76,27 +86,11 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
   }
 
   const deleteSupplier = (id: number) => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Eliminar proveedor?',
-      text: "No podrás revertir esto",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6366f1',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-dark-card)',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.delete(`/catalog/suppliers/${id}`, {
-          onSuccess: () => {
-            if (editingSupplier?.id === id) {
-              cancelEdit()
-            }
-          }
-        })
-      }
+      onConfirm: () => router.delete(`/catalog/suppliers/${id}`, {
+        onSuccess: () => { if (editingSupplier?.id === id) cancelEdit() }
+      })
     })
   }
 
@@ -115,11 +109,11 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
           <div className="lg:col-span-1" ref={formRef}>
-            <Card className={editingSupplier ? 'ring-2 ring-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
+            <Card className={editingSupplier ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${
                   editingSupplier 
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
+                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-400' 
                     : 'bg-[var(--sf-surface)] border-[var(--sf-border)] text-[var(--sf-text-main)]'
                 }`}>
                   {editingSupplier ? <Pencil className="w-5 h-5 shrink-0" /> : <Users className="w-5 h-5 shrink-0 text-[var(--sf-text-muted)]" />}
@@ -139,7 +133,7 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
                       type="text"
                       value={form.data.name}
                       onChange={e => form.setData('name', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                       required
                     />
                     {form.errors.name && <p className="mt-1 text-sm text-red-400">{form.errors.name}</p>}
@@ -159,7 +153,7 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
                         type="email"
                         value={form.data.contact_email}
                         onChange={e => form.setData('contact_email', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 text-sm"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 text-sm"
                       />
                     </div>
                     <div>
@@ -183,7 +177,7 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
                     <button
                       type="submit"
                       disabled={form.processing}
-                      className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       {editingSupplier ? 'Actualizar Proveedor' : 'Guardar Proveedor'}
@@ -205,11 +199,17 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
           </div>
 
           {/* Lista */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+              <TableFilters.Search
+                value={search}
+                onChange={setSearch}
+                onSearch={applyFilters}
+                placeholder="Buscar por nombre o RUT..."
+                className="w-full sm:w-96"
+              />
+            </TableFilters>
             <Card className="overflow-hidden flex flex-col h-full">
-              <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]">
-                <SearchBar routeName="/catalog/suppliers" currentSearch={currentSearch || ""} placeholder="Buscar por nombre o RUT..." />
-              </div>
               <div className="flex-1 overflow-auto">
                 <Table>
                   <Table.Thead>
@@ -230,7 +230,7 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
                       </Table.Tr>
                     ) : (
                       suppliers.map((s) => (
-                        <Table.Tr key={s.id} className={editingSupplier?.id === s.id ? 'bg-indigo-500/5' : ''}>
+                        <Table.Tr key={s.id} className={editingSupplier?.id === s.id ? 'bg-primary-500/5' : ''}>
                           <Table.Td className="text-[var(--sf-text-main)] font-medium">{s.name}</Table.Td>
                           <Table.Td className="text-[var(--sf-text-muted)]">{s.rut || '-'}</Table.Td>
                           <Table.Td>
@@ -250,12 +250,12 @@ export default function SuppliersIndex({ suppliers, pagination, currentSearch }:
                             </span>
                           </Table.Td>
                           <Table.Td className="text-right">
-                            <div className="flex items-center justify-end gap-3">
-                              <button onClick={() => editSupplier(s)} className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Pencil className="w-3.5 h-3.5" /> Editar
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => editSupplier(s)} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors" title="Editar">
+                                <Pencil size={18} />
                               </button>
-                              <button onClick={() => deleteSupplier(s.id)} className="text-red-400 hover:text-red-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                              <button onClick={() => deleteSupplier(s.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar">
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </Table.Td>

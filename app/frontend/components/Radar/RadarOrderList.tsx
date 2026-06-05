@@ -80,8 +80,8 @@ export default function RadarOrderList({ data, loading, selectedOrder, onSelectO
               </div>
               <p className="text-[10px] text-slate-400 truncate">{order.address}</p>
               <div className="flex items-center gap-1 mt-1.5">
-                <Package className="w-3 h-3 text-indigo-400" />
-                <p className="text-[10px] text-indigo-300 font-medium truncate">{order.summary}</p>
+                <Package className="w-3 h-3 text-primary-400" />
+                <p className="text-[10px] text-primary-300 font-medium truncate">{order.summary}</p>
               </div>
             </button>
           ))}

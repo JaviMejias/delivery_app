@@ -2,7 +2,12 @@ class MaterialsController < ApplicationController
   before_action :require_admin!
 
   def index
-    materials = Material.includes(:material_category).ordered_by_name.search_by_name(params[:search])
+    materials = Material.includes(:material_category).recent.search_by_name(params[:search])
+    
+    if params[:category_id].present? && params[:category_id] != 'all'
+      materials = materials.where(material_category_id: params[:category_id])
+    end
+
     pagy, records = pagy(:offset, materials, limit: 20)
 
     categories = MaterialCategory.ordered_by_name
@@ -11,6 +16,7 @@ class MaterialsController < ApplicationController
       materials: records.as_json(include: :material_category),
       pagination: extract_pagy(pagy),
       currentSearch: params[:search],
+      currentCategory: params[:category_id],
       categories: categories
     }
   end

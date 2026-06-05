@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Head, useForm, Link } from '@inertiajs/react'
+import { Head, useForm, Link, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import Pagination from '@/components/Pagination'
-import SearchBar from '@/components/SearchBar'
+import { TableFilters } from '@/components/TableFilters'
 import { CustomSelect } from '@/components/CustomSelect'
-import { ArrowRightLeft } from 'lucide-react'
+import { ArrowRightLeft, Calendar, Eye, Pencil } from 'lucide-react'
+import { formatPlate } from '@/utils/formatters'
 
 interface PlantWarehouse {
   id: number
@@ -50,16 +51,11 @@ interface Props {
   currentSearch?: string
 }
 
-// Formatea la patente
-const formatPlate = (p: string) => {
-  const c = p.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  if (c.length <= 2) return c
-  if (c.length <= 4) return `${c.slice(0, 2)}-${c.slice(2)}`
-  return `${c.slice(0, 2)}-${c.slice(2, 4)}-${c.slice(4, 6)}`
-}
+
 
 export default function TransfersIndex({ transfers, plant_warehouses, trucks, pagination, currentSearch }: Props) {
   const [transferType, setTransferType] = useState('load_truck')
+  const [search, setSearch] = useState(currentSearch || '')
   const { data, setData, post, reset, processing } = useForm({
     source_warehouse_id: '',
     destination_warehouse_id: ''
@@ -102,7 +98,7 @@ export default function TransfersIndex({ transfers, plant_warehouses, trucks, pa
                 <button
                   type="button"
                   onClick={() => { setTransferType('load_truck'); reset(); }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${transferType === 'load_truck' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-transparent text-[var(--sf-text-muted)] border-[var(--sf-border)] hover:bg-[var(--sf-bg)]'}`}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${transferType === 'load_truck' ? 'bg-primary-500/20 text-primary-400 border-primary-500/30' : 'bg-transparent text-[var(--sf-text-muted)] border-[var(--sf-border)] hover:bg-[var(--sf-bg)]'}`}
                 >
                   🚛 Cargar Camión
                 </button>
@@ -190,7 +186,7 @@ export default function TransfersIndex({ transfers, plant_warehouses, trucks, pa
                 <button
                   type="submit"
                   disabled={processing || !data.source_warehouse_id || !data.destination_warehouse_id}
-                  className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50"
+                  className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50"
                 >
                   Siguiente: Elegir Productos →
                 </button>
@@ -201,14 +197,20 @@ export default function TransfersIndex({ transfers, plant_warehouses, trucks, pa
 
           {/* Historial */}
           <div className="lg:col-span-2">
-            <div className="flex justify-between items-center bg-[var(--sf-surface)] border border-[var(--sf-border)] p-4 rounded-xl mb-4">
-              <SearchBar routeName="/inventory/transfers" currentSearch={currentSearch || ""} placeholder="Buscar por ID..." />
-            </div>
+            <TableFilters>
+              <TableFilters.Search
+                value={search}
+                onChange={setSearch}
+                onSearch={() => router.get('/inventory/transfers', { search }, { preserveState: true })}
+                placeholder="Buscar por Código..."
+                className="w-full"
+              />
+            </TableFilters>
             <Card className="overflow-hidden ">
               <Table>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>#</Table.Th>
+                      <Table.Th>Código</Table.Th>
                       <Table.Th>Ruta</Table.Th>
                       <Table.Th>Fecha</Table.Th>
                       <Table.Th>Estado</Table.Th>
@@ -234,10 +236,12 @@ export default function TransfersIndex({ transfers, plant_warehouses, trucks, pa
                               <span className="text-emerald-400 text-xs">Entra:</span> {t.destination_warehouse?.name}
                             </div>
                           </Table.Td>
-                          <Table.Td className="text-[var(--sf-text-muted)] text-xs">
-                            {new Date(t.created_at).toLocaleDateString()}
-                            <br />
-                            <span className="opacity-70 text-[10px]">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <Table.Td className="text-[var(--sf-text-muted)] text-xs whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 mb-0.5 text-sm text-[var(--sf-text-main)] font-medium">
+                              <Calendar className="w-3.5 h-3.5 text-[var(--sf-text-muted)]" />
+                              {new Date(t.created_at).toLocaleDateString()}
+                            </div>
+                            <span className="opacity-70 text-[10px] ml-5">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </Table.Td>
                           <Table.Td>
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -249,8 +253,8 @@ export default function TransfersIndex({ transfers, plant_warehouses, trucks, pa
                             </span>
                           </Table.Td>
                           <Table.Td className="text-right">
-                            <Link href={`/inventory/transfers/${t.id}`} className="text-indigo-400 hover:text-indigo-300 font-medium text-sm">
-                              {t.status === 'draft' ? 'Editar →' : 'Ver →'}
+                            <Link href={`/inventory/transfers/${t.id}`} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg inline-block transition-colors" title={t.status === 'draft' ? 'Editar' : 'Ver Detalles'}>
+                              {t.status === 'draft' ? <Pencil size={18} /> : <Eye size={18} />}
                             </Link>
                           </Table.Td>
                         </Table.Tr>

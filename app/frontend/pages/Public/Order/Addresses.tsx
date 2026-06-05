@@ -103,8 +103,10 @@ export default function Addresses({ company, current_customer, addresses }: any)
     if (!L || mapRef.current) return
     mapRef.current = L.map('address-map', { zoomControl: false, attributionControl: false }).setView([-33.4489, -70.6693], 15)
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd', maxZoom: 20
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      maxNativeZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 20
     }).addTo(mapRef.current)
 
     mapRef.current.on('moveend', async () => {
@@ -384,7 +386,7 @@ export default function Addresses({ company, current_customer, addresses }: any)
                   <div className="space-y-3 mt-6">
                     <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest pl-2">Mis Direcciones</h3>
                     {addresses.map((addr: Address) => (
-                      <div key={addr.id} className="bg-slate-900 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+                      <div key={addr.id} className="bg-slate-900 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4 relative overflow-hidden group hover:border-primary-500/30 transition-colors">
                         {addr.is_default && (
                           <div className="absolute top-0 right-0 z-10">
                             <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
@@ -393,8 +395,8 @@ export default function Addresses({ company, current_customer, addresses }: any)
                           </div>
                         )}
                         <div className="flex items-center gap-4 w-full sm:w-auto">
-                          <div className="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
-                            <Home className="w-6 h-6 text-indigo-400" />
+                          <div className="w-12 h-12 bg-primary-500/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-primary-500/20 transition-colors">
+                            <Home className="w-6 h-6 text-primary-400" />
                           </div>
                           <div className="flex-1 pr-2 min-w-0">
                             <h4 className="text-white font-bold text-lg truncate pr-16 sm:pr-0">{addr.alias}</h4>
@@ -418,7 +420,7 @@ export default function Addresses({ company, current_customer, addresses }: any)
                           </button>
                           <button 
                             onClick={() => handleEdit(addr)}
-                            className="flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 bg-indigo-500/10 rounded-xl sm:rounded-full flex items-center justify-center text-indigo-400 hover:bg-indigo-500/20 transition-colors active:scale-95"
+                            className="flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 bg-primary-500/10 rounded-xl sm:rounded-full flex items-center justify-center text-primary-400 hover:bg-primary-500/20 transition-colors active:scale-95"
                             title="Editar"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>

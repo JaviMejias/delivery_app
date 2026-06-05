@@ -14,7 +14,7 @@ module Api
             latitude: order_data[:latitude],
             longitude: order_data[:longitude],
             notes: order_data[:notes],
-            details: order_data[:details].present? ? order_data[:details].permit!.to_h : {}
+            details: order_data[:details].present? ? order_data.permit(details: {})[:details] || order_data[:details].to_unsafe_h : {}
           )
 
           if order.save

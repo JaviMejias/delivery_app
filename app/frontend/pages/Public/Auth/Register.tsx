@@ -49,7 +49,7 @@ export default function Register({ company }: { company: { id: number, slug: str
       <Head title={`Registro - ${company.name}`} />
       
       <div className="w-full max-w-md z-10">
-        <Link href={`/order/${company.slug}/auth/login`} className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-medium mb-6 transition-colors">
+        <Link href={`/order/${company.slug}/auth/login`} className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 font-medium mb-6 transition-colors">
           <ArrowLeft className="w-5 h-5" /> Volver al Inicio de Sesión
         </Link>
         
@@ -67,7 +67,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                     type="text" required
                     value={data.customer.first_name}
                     onChange={e => setData('customer', { ...data.customer, first_name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-indigo-500 transition-all"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-primary-500 transition-all"
                   />
                 </div>
               </div>
@@ -77,7 +77,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                   type="text" required
                   value={data.customer.last_name}
                   onChange={e => setData('customer', { ...data.customer, last_name: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-primary-500 transition-all"
                 />
               </div>
             </div>
@@ -88,7 +88,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                 <PhoneInput
                   value={data.customer.phone}
                   onValueChange={(val) => setData('customer', { ...data.customer, phone: val })}
-                  className="!w-full !bg-slate-950 !border-slate-800 !rounded-xl !py-2.5 !text-sm !text-white focus:!ring-1 focus:!ring-indigo-500 !transition-all"
+                  className="!w-full !bg-slate-950 !border-slate-800 !rounded-xl !py-2.5 !text-sm !text-white focus:!ring-1 focus:!ring-primary-500 !transition-all"
                 />
               </div>
             </div>
@@ -101,7 +101,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                   type="email"
                   value={data.customer.email}
                   onChange={e => setData('customer', { ...data.customer, email: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-primary-500 transition-all"
                   placeholder="correo@ejemplo.com"
                 />
               </div>
@@ -116,7 +116,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                     type="password" required minLength={6}
                     value={data.customer.password}
                     onChange={e => setData('customer', { ...data.customer, password: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-indigo-500 transition-all"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-primary-500 transition-all"
                   />
                 </div>
               </div>
@@ -128,7 +128,7 @@ export default function Register({ company }: { company: { id: number, slug: str
                     type="password" required minLength={6}
                     value={data.customer.password_confirmation}
                     onChange={e => setData('customer', { ...data.customer, password_confirmation: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-indigo-500 transition-all"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:ring-1 focus:ring-primary-500 transition-all"
                   />
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function Register({ company }: { company: { id: number, slug: str
             <button
               type="submit"
               disabled={processing}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors active:scale-[0.98] mt-6 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl transition-colors active:scale-[0.98] mt-6 flex items-center justify-center gap-2"
             >
               {processing ? 'Registrando...' : 'Crear Cuenta'}
             </button>

@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   # The rest of the routes are protected by authenticate_user! in ApplicationController
   get "dashboard", to: "dashboard#show"
 
-  resources :companies, only: [:index, :create, :update] do
+  resources :companies, only: [ :index, :create, :update ] do
     member do
       post :switch
     end
@@ -32,7 +32,7 @@ Rails.application.routes.draw do
     resources :product_prices, only: [ :create, :update, :destroy ], shallow: true
   end
 
-  resources :local_closures, path: "sales/local/closures", only: [:index, :new, :create, :show]
+  resources :local_closures, path: "sales/local/closures", only: [ :index, :new, :create, :show ]
 
   resources :local_sales, path: "sales/local", only: [ :index, :create ] do
     collection do
@@ -45,8 +45,11 @@ Rails.application.routes.draw do
     collection do
       get :map
       get :locations
-      post 'cancel_order/:order_id', to: 'trucks#cancel_order'
-      post 'assign_order/:order_id', to: 'trucks#assign_order'
+      get :search_customers
+      get :pending_mileage_updates
+      patch :bulk_update_mileage
+      post "cancel_order/:order_id", to: "trucks#cancel_order"
+      post "assign_order/:order_id", to: "trucks#assign_order"
     end
     member do
       patch :toggle_active
@@ -62,9 +65,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :customer_orders, path: "logistics/orders", only: [:index]
+  resources :customer_orders, path: "logistics/orders", only: [ :index ]
 
-  resources :customers, only: [:index] do
+  resources :customers, only: [ :index ] do
     member do
       put :unblock
     end
@@ -85,11 +88,12 @@ Rails.application.routes.draw do
     resources :adjustments, controller: "/inventory_adjustments", only: [ :new, :create ]
   end
 
-  resources :route_settlements, path: "sales/settlements", only: [ :index, :show, :create, :update ] do
+  resources :route_settlements, path: "sales/settlements", only: [ :index, :show, :create, :update, :destroy ] do
     member do
       post :complete
     end
     resources :items, controller: "route_settlement_items", only: [ :create, :destroy ]
+    resources :expenses, controller: "route_settlement_expenses", only: [ :create, :destroy ]
   end
 
   resources :purchase_orders, path: "purchases/orders" do
@@ -99,68 +103,79 @@ Rails.application.routes.draw do
     resources :items, controller: "purchase_order_items", only: [ :create, :destroy ]
   end
 
-  resources :purchase_documents, path: "purchases/documents", except: [:destroy] do
+  resources :purchase_documents, path: "purchases/documents" do
     member do
       patch :mark_as_paid
       patch :finalize
       patch :void
-      delete 'delete_file/:file_id', to: 'purchase_documents#delete_file', as: :delete_file
+      delete "delete_file/:file_id", to: "purchase_documents#delete_file", as: :delete_file
     end
     resources :items, controller: "purchase_document_items", only: [ :create, :update, :destroy ]
   end
 
   get "inventory/stock", to: "inventories#index", as: :inventory_stock
 
+  namespace :api, defaults: { format: :json } do
+    resources :notifications, only: [:index, :destroy] do
+      collection do
+        post :mark_all_read
+      end
+      member do
+        post :mark_as_read
+      end
+    end
+  end
+
   # Treasury
-  resources :treasury_expenses, path: "treasury/expenses", only: [:index, :new, :create, :show]
-  resources :treasury_incomes, path: "treasury/incomes", only: [:index]
+  resources :treasury_expenses, path: "treasury/expenses", only: [ :index, :new, :create, :show ]
+  resources :treasury_incomes, path: "treasury/incomes", only: [ :index ]
 
   # API de Integracion para GPS Externos (fuera del bloque autenticado de usuario)
   namespace :api, defaults: { format: :json } do
     namespace :v1 do
-      post 'gps/update', to: 'gps#update'
-      get 'geocode', to: 'geocoding#search'
-      get 'reverse_geocode', to: 'geocoding#reverse'
-      
+      post "gps/update", to: "gps#update"
+      get "geocode", to: "geocoding#search"
+      get "reverse_geocode", to: "geocoding#reverse"
+
       namespace :dispatch do
-        resources :orders, only: [:create]
+        resources :orders, only: [ :create ]
       end
     end
   end
 
 
   # Public customer order portal (no auth required)
-  scope '/order/:company_slug', as: 'public_order' do
-    get '/', to: 'public/customer_orders#new', as: 'new'
-    post '/', to: 'public/customer_orders#create', as: 'create'
-    get '/history', to: 'public/customer_orders#history', as: 'history'
-    get '/track/:token', to: 'public/customer_orders#show', as: 'tracking'
-    post '/orders/:id/cancel', to: 'public/customer_orders#cancel', as: 'cancel'
+  scope "/order/:company_slug", as: "public_order" do
+    get "/", to: "public/customer_orders#new", as: "new"
+    post "/", to: "public/customer_orders#create", as: "create"
+    get "/history", to: "public/customer_orders#history", as: "history"
+    get "/track/:token", to: "public/customer_orders#show", as: "tracking"
+    post "/orders/:id/cancel", to: "public/customer_orders#cancel", as: "cancel"
 
-    resources :customer_addresses, only: [:index, :create, :update, :destroy], controller: 'public/customer_addresses' do
+    resources :customer_addresses, only: [ :index, :create, :update, :destroy ], controller: "public/customer_addresses" do
       member do
         patch :set_default
       end
     end
-    devise_for :customers, 
-      module: 'public/customers',
-      path: 'auth',
+    devise_for :customers,
+      module: "public/customers",
+      path: "auth",
       path_names: {
-        sign_in: 'login',
-        sign_out: 'logout',
-        sign_up: 'register'
+        sign_in: "login",
+        sign_out: "logout",
+        sign_up: "register"
       }
   end
 
   # Driver radar (authenticated driver only)
   namespace :driver do
-    get 'radar', to: 'radar#index'
-    get 'radar/orders', to: 'radar#orders', as: :radar_orders
-    post 'radar/accept/:order_id', to: 'radar#accept_order', as: :accept_radar_order
-    post 'radar/complete/:order_id', to: 'radar#complete_order', as: :complete_radar_order
-    post 'radar/cancel/:order_id', to: 'radar#cancel_order', as: :cancel_radar_order
-    post 'radar/reject_proposal/:order_id', to: 'radar#reject_proposal', as: :reject_radar_proposal
-    post 'radar/update_location', to: 'radar#update_location', as: :radar_update_location
+    get "radar", to: "radar#index"
+    get "radar/orders", to: "radar#orders", as: :radar_orders
+    post "radar/accept/:order_id", to: "radar#accept_order", as: :accept_radar_order
+    post "radar/complete/:order_id", to: "radar#complete_order", as: :complete_radar_order
+    post "radar/cancel/:order_id", to: "radar#cancel_order", as: :cancel_radar_order
+    post "radar/reject_proposal/:order_id", to: "radar#reject_proposal", as: :reject_radar_proposal
+    post "radar/update_location", to: "radar#update_location", as: :radar_update_location
   end
 
   # Unauthenticated root - redirect to login

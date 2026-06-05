@@ -168,8 +168,8 @@ export default function OrderForm({
       <section className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
         <div className="flex flex-col items-center justify-center text-center mb-6 relative">
           <div className="w-16 h-16 rounded-full bg-slate-900 border border-white/10 shadow-xl flex items-center justify-center mb-4 relative">
-             <div className="absolute inset-0 rounded-full bg-indigo-500/10 animate-pulse"></div>
-             <Package className="w-7 h-7 text-indigo-400 relative z-10" />
+             <div className="absolute inset-0 rounded-full bg-primary-500/10 animate-pulse"></div>
+             <Package className="w-7 h-7 text-primary-400 relative z-10" />
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">¿Qué necesitas?</h2>
           <p className="text-slate-400 text-sm mt-2 font-medium uppercase tracking-widest text-[10px]">Paso 3 de 4</p>
@@ -199,9 +199,9 @@ export default function OrderForm({
 
               <button
                 onClick={() => setMode('quick')}
-                className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-transparent hover:border-indigo-500/50 transition-all active:scale-95 text-center group shadow-md"
+                className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-transparent hover:border-primary-500/50 transition-all active:scale-95 text-center group shadow-md"
               >
-                <div className="w-14 h-14 rounded-full bg-slate-800 shadow-inner flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform border border-white/5">
+                <div className="w-14 h-14 rounded-full bg-slate-800 shadow-inner flex items-center justify-center text-primary-400 group-hover:scale-110 transition-transform border border-white/5">
                   <Zap className="w-6 h-6" />
                 </div>
                 <div>
@@ -219,7 +219,7 @@ export default function OrderForm({
                 onChange={e => setQuickOrder(e.target.value)}
                 placeholder="Ej: Hola, necesito un galón de 15 kilos..."
                 rows={3}
-                className="w-full px-5 py-4 pb-14 bg-slate-950 border border-white/5 rounded-2xl text-white placeholder-slate-500 font-medium text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner resize-none"
+                className="w-full px-5 py-4 pb-14 bg-slate-950 border border-white/5 rounded-2xl text-white placeholder-slate-500 font-medium text-sm focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"
                 autoFocus
               />
               
@@ -312,12 +312,12 @@ export default function OrderForm({
 
             <div className={`${notes ? 'pb-6 border-b border-dashed border-white/10' : ''}`}>
               <div className="flex items-center gap-2 mb-4">
-                <Package className="w-4 h-4 text-indigo-400" />
+                <Package className="w-4 h-4 text-primary-400" />
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Tu Pedido</p>
               </div>
               {mode === 'quick' ? (
-                <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20">
-                  <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">"{quickOrder}"</p>
+                <div className="bg-primary-500/10 p-4 rounded-xl border border-primary-500/20">
+                  <p className="text-sm text-primary-100 font-medium italic leading-relaxed">"{quickOrder}"</p>
                 </div>
               ) : (
                 <ul className="space-y-3">

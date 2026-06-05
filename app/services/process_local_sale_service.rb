@@ -17,11 +17,11 @@ class ProcessLocalSaleService
         voucher_revenue: @params[:voucher_revenue] || 0,
         card_surcharge: @params[:card_surcharge] || 0
       )
-      
+
       sale.total_revenue = sale.cash_revenue + sale.card_revenue + sale.transfer_revenue + sale.voucher_revenue
       sale.save!
       items_data = @params[:items] || []
-      
+
       items_data.each do |item_data|
         product = Product.find(item_data[:product_id])
         quantity = item_data[:quantity].to_i
@@ -38,7 +38,7 @@ class ProcessLocalSaleService
         process_full_inventory(sale, product, quantity) if quantity > 0
         process_empty_inventory(sale, product, empty_qty) if empty_qty > 0 && product.material.returnable
       end
-      
+
       sale
     end
   end
@@ -51,11 +51,11 @@ class ProcessLocalSaleService
       warehouse_id: sale.warehouse_id,
       item: product
     )
-    
+
     if inventory_full.quantity.to_i < quantity
       raise "No hay suficiente stock de #{product.name} en esta bodega."
     end
-    
+
     inventory_full.quantity -= quantity
     inventory_full.save!
 

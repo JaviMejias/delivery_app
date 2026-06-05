@@ -1,0 +1,15 @@
+ARG RUBY_VERSION=4.0.5
+FROM docker.io/library/ruby:$RUBY_VERSION-slim
+
+WORKDIR /rails
+
+# Instalamos dependencias del sistema y Node.js 22 para Vite
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config curl postgresql-client && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install --no-install-recommends -y nodejs && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# En desarrollo, el código se monta como volumen desde tu PC local,
+# por lo que no necesitamos copiar archivos ni instalar gemas aquí.
+CMD ["bash"]

@@ -5,7 +5,7 @@ class SimulateTruckMovementService
 
   def call
     trucks = Truck.where(company_id: @company.id).active.includes(:driver, :warehouse)
-    
+
     trucks.each do |truck|
       next if truck.gps_active? || truck.gps_last_updated_at.present?
 
@@ -19,9 +19,9 @@ class SimulateTruckMovementService
       if truck.latitude.blank? || truck.longitude.blank?
         offset_lat = (truck.id % 5) * 0.008 - 0.016
         offset_lng = (truck.id % 5) * 0.008 - 0.016
-        
-        base_lat = truck.base_warehouse&.latitude || BigDecimal('-33.4489')
-        base_lng = truck.base_warehouse&.longitude || BigDecimal('-70.6693')
+
+        base_lat = truck.base_warehouse&.latitude || BigDecimal("-33.4489")
+        base_lng = truck.base_warehouse&.longitude || BigDecimal("-70.6693")
 
         truck.update_columns(
           latitude: base_lat + BigDecimal(offset_lat.to_s),
@@ -36,7 +36,7 @@ class SimulateTruckMovementService
             begin
               route = JSON.parse(truck.route_points)
               current_idx = truck.route_current_index || 0
-              
+
               if current_idx >= route.length - 1
                 new_lat = truck.destination_latitude
                 new_lng = truck.destination_longitude
@@ -49,14 +49,14 @@ class SimulateTruckMovementService
                 loop do
                   next_idx += 1
                   break if next_idx >= route.length - 1
-                  
+
                   p_curr = route[current_idx]
                   p_next = route[next_idx]
                   dist = Math.sqrt(((p_next[0] - p_curr[0])**2) + ((p_next[1] - p_curr[1])**2))
                   break if dist >= 0.0008
                 end
                 next_idx = route.length - 1 if next_idx >= route.length
-                
+
                 new_lat = route[next_idx][0]
                 new_lng = route[next_idx][1]
                 truck.update_columns(route_current_index: next_idx)
@@ -93,13 +93,13 @@ class SimulateTruckMovementService
         else
           delta_lat = rand(-0.0004..0.0004)
           delta_lng = rand(-0.0004..0.0004)
-          
+
           new_lat = truck.latitude + BigDecimal(delta_lat.to_s)
           new_lng = truck.longitude + BigDecimal(delta_lng.to_s)
-          
-          base_lat = truck.base_warehouse&.latitude || BigDecimal('-33.4489')
-          base_lng = truck.base_warehouse&.longitude || BigDecimal('-70.6693')
-          
+
+          base_lat = truck.base_warehouse&.latitude || BigDecimal("-33.4489")
+          base_lng = truck.base_warehouse&.longitude || BigDecimal("-70.6693")
+
           if new_lat < base_lat - 0.05 || new_lat > base_lat + 0.05
             new_lat = base_lat
           end
@@ -107,7 +107,7 @@ class SimulateTruckMovementService
             new_lng = base_lng
           end
         end
-        
+
         truck.update_columns(
           latitude: new_lat,
           longitude: new_lng

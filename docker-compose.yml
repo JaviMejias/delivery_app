@@ -8,6 +8,8 @@ services:
       POSTGRES_USER: stockflow
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: stock_flow_production
+    ports:
+      - "5433:5432"
 
   web:
     build: .
@@ -25,6 +27,7 @@ services:
       - POSTGRES_USER=stockflow
       - POSTGRES_PASSWORD=secretpassword
       - SECRET_KEY_BASE=a_very_long_random_secret_key_for_production_replace_this
+      - APP_NAME=${APP_NAME:-StockFlow}
     command: bash -c "bundle exec rails db:prepare && ./bin/thrust ./bin/rails server"
 
 volumes:

@@ -19,7 +19,9 @@ import {
   Compass,
   CheckCircle,
   Mic,
-  Zap
+  Zap,
+  Users,
+  Search
 } from 'lucide-react'
 import ProductSelector from '@/components/ProductSelector'
 import PhoneInput from '@/components/PhoneInput'
@@ -94,7 +96,6 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
   const [followedTruckId, setFollowedTruckId] = useState<number | null>(null)
   const followedTruckIdRef = useRef<number | null>(null)
 
-  // Search states
   const [searchTruck, setSearchTruck] = useState('')
   const [searchOrder, setSearchOrder] = useState('')
 
@@ -141,6 +142,37 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
   const [isListExpanded, setIsListExpanded] = useState(true)
   const [isDetailExpanded, setIsDetailExpanded] = useState(false)
   const [isOrdersListExpanded, setIsOrdersListExpanded] = useState(false)
+  const [isCustomersListExpanded, setIsCustomersListExpanded] = useState(false)
+
+  // Estados para Clientes
+  const [searchCustomer, setSearchCustomer] = useState('')
+  const [customersList, setCustomersList] = useState<any[]>([])
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false)
+
+  useEffect(() => {
+    if (!isCustomersListExpanded) {
+      setCustomersList([])
+      return
+    }
+
+    if (searchCustomer.trim().length > 0 && searchCustomer.trim().length < 2) {
+      setCustomersList([])
+      return
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearchingCustomers(true)
+      try {
+        const res = await fetch(`/trucks/search_customers?q=${encodeURIComponent(searchCustomer)}`)
+        const data = await res.json()
+        setCustomersList(data.customers || [])
+      } catch (e) {
+        console.error("Error searching customers", e)
+      } finally {
+        setIsSearchingCustomers(false)
+      }
+    }, 400)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchCustomer, isCustomersListExpanded])
 
   // Reloj local para cuenta regresiva exacta en tiempo real
   const [now, setNow] = useState(Date.now())
@@ -175,49 +207,49 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
         const popupContent = `
           <div class="p-3.5 min-w-[220px] text-slate-200 font-sans leading-relaxed">
-            <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
-              <span class="font-mono font-black text-sm text-indigo-400 tracking-wider">${formatPlate(truck.plate_number)}</span>
+            <div class="flex items-center justify-between border-b border-[var(--sf-border)] pb-2 mb-2.5">
+              <span class="font-mono font-black text-sm text-primary-400 tracking-wider">${formatPlate(truck.plate_number)}</span>
               <span class="px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border ${
                 truck.gps_active
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                   : truck.has_real_gps 
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                    : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                    : 'bg-primary-500/10 text-primary-400 border-primary-500/20'
               }">${truck.gps_active ? 'GPS Activo' : truck.has_real_gps ? 'GPS Inactivo' : 'Simulado'}</span>
             </div>
             
             <p class="text-xs font-semibold mb-2.5 text-slate-300">
-              Chofer: <span class="text-white font-bold ml-1">${truck.driver_name || 'Sin Chofer'}</span>
+              Chofer: <span class="text-[var(--sf-text-main)] font-bold ml-1">${truck.driver_name || 'Sin Chofer'}</span>
               ${truck.driver_phone ? `<br/><span class="text-[10px] text-slate-400 font-mono mt-0.5 block">📞 ${truck.driver_phone}</span>` : ''}
             </p>
 
-            <div class="space-y-1.5 bg-white/5 p-2 rounded-xl border border-white/5 mb-3">
+            <div class="space-y-1.5 bg-white/5 p-2 rounded-xl border border-[var(--sf-border)] mb-3">
               <p class="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Carga Actual</p>
               <div class="flex justify-between text-xs">
-                <span class="text-indigo-300 font-medium">Llenos:</span>
-                <span class="font-black text-white">${truck.total_llenos} cil.</span>
+                <span class="text-primary-300 font-medium">Llenos:</span>
+                <span class="font-black text-[var(--sf-text-main)]">${truck.total_llenos} cil.</span>
               </div>
               <div class="flex justify-between text-xs">
                 <span class="text-purple-300 font-medium">Envases Vacíos:</span>
-                <span class="font-black text-white">${truck.total_vacios} uds.</span>
+                <span class="font-black text-[var(--sf-text-main)]">${truck.total_vacios} uds.</span>
               </div>
             </div>
 
             ${
               truck.destination
                 ? `
-                <div class="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2.5">
+                <div class="mt-2.5 pt-2.5 border-t border-[var(--sf-border)] flex items-center justify-between gap-2.5">
                   <div class="overflow-hidden flex-1">
                     <div class="flex items-center gap-1.5 mb-1.5">
                       <span class="text-[9px] uppercase font-bold text-rose-400 tracking-wider">Destino Despacho</span>
                       ${departureStatusHtml}
                     </div>
-                    <p class="text-xs font-black text-white truncate">${truck.destination.client_name}</p>
+                    <p class="text-xs font-black text-[var(--sf-text-main)] truncate">${truck.destination.client_name}</p>
                     <p class="text-[10px] text-slate-400 truncate mt-0.5">${truck.destination.address}</p>
                   </div>
                   <button 
                     onclick="window.clearTruckDispatch(${truck.id})"
-                    class="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-500 border border-rose-500/30 rounded-lg transition-all cursor-pointer shadow-lg shadow-rose-950/20 active:scale-95 shrink-0"
+                    class="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[var(--sf-text-main)] bg-rose-600 hover:bg-rose-500 border border-rose-500/30 rounded-lg transition-all cursor-pointer shadow-lg shadow-rose-950/20 active:scale-95 shrink-0"
                   >
                     Cancelar Despacho
                   </button>
@@ -239,6 +271,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
   const tempMarkerRef = useRef<any>(null)
   
   const mapRef = useRef<any>(null)
+  const tileLayerRef = useRef<any>(null)
   const markersRef = useRef<Record<number, any>>({})
   const destinationsRef = useRef<Record<number, any>>({})
   const pathsRef = useRef<Record<number, any>>({})
@@ -597,7 +630,18 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
     loadLeaflet()
 
+    // Observer para el tema (Claro/Oscuro) en Leaflet
+    const observer = new MutationObserver(() => {
+      const isLight = document.documentElement.classList.contains('theme-light')
+      if (tileLayerRef.current) {
+        const newUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        tileLayerRef.current.setUrl(newUrl)
+      }
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
     return () => {
+      observer.disconnect()
       // Limpieza del mapa al desmontar
       if (mapRef.current) {
         mapRef.current.remove()
@@ -620,11 +664,15 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
       position: 'bottomright'
     }).addTo(mapRef.current)
 
-    // Capa de mapa oscura y premium
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
+    // Capa de mapa dinámica (claro vs oscuro)
+    const isLight = document.documentElement.classList.contains('theme-light')
+    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+
+    tileLayerRef.current = L.tileLayer(tileUrl, {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 20,
+      maxNativeZoom: 19,
+      className: isLight ? '' : 'map-dark-mode'
     }).addTo(mapRef.current)
 
     mapRef.current.on('dragstart', () => {
@@ -657,13 +705,19 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
       setRefreshing(false)
     }
   }, [])
-  // Realtime updates using ActionCable
   useActionCable('OrdersChannel', (payload) => {
     if (payload.action === 'new_order') {
       try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext
         if (AudioContext) {
           const ctx = new AudioContext()
+          
+          // En navegadores modernos, si ya hubo interacción previa en el dominio,
+          // resume() lo desbloquea inmediatamente aunque se llame asíncronamente
+          if (ctx.state === 'suspended') {
+            ctx.resume()
+          }
+
           const playTone = (freq: number, startTime: number, duration: number) => {
             const osc = ctx.createOscillator()
             const gain = ctx.createGain()
@@ -681,7 +735,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           playTone(880, now, 0.15)
           playTone(1108.73, now + 0.1, 0.3)
         }
-      } catch (e) { console.log('Audio blocked', e) }
+      } catch (e) { console.log('Audio error', e) }
 
       Swal.fire({
         toast: true,
@@ -730,10 +784,10 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
         <div class="relative flex flex-col items-center">
           <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 shadow-2xl transition-all duration-300 ${
             truck.gps_active
-              ? 'bg-emerald-500 border-emerald-300 text-white shadow-emerald-500/30'
+              ? 'bg-emerald-500 border-emerald-300 text-[var(--sf-text-main)] shadow-emerald-500/30'
               : truck.has_real_gps
                 ? 'bg-amber-500 border-amber-300 text-amber-950 shadow-amber-500/30'
-                : 'bg-indigo-500 border-indigo-300 text-white shadow-indigo-500/30'
+                : 'bg-primary-500 border-primary-300 text-[var(--sf-text-main)] shadow-primary-500/30'
           }">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-4v10a2 2 0 0 0 2 2z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
           </div>
@@ -744,7 +798,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                 ? '<span class="absolute top-0 right-0 flex h-3.5 w-3.5"><span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500"></span></span>'
                 : ''
           }
-          <div class="px-1.5 py-0.5 mt-1 bg-slate-900 border border-white/20 rounded shadow text-[9px] font-black text-white font-mono tracking-widest uppercase">
+          <div class="px-1.5 py-0.5 mt-1 bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded shadow text-[9px] font-black text-[var(--sf-text-main)] font-mono tracking-widest uppercase">
             ${formatPlate(truck.plate_number)}
           </div>
         </div>
@@ -760,29 +814,29 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
       // Popup visualmente premium con colores de alto contraste y botones interactivos
       const popupContent = `
         <div class="p-3.5 min-w-[220px] text-slate-200 font-sans leading-relaxed">
-          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
-            <span class="font-mono font-black text-sm text-indigo-400 tracking-wider">${formatPlate(truck.plate_number)}</span>
+          <div class="flex items-center justify-between border-b border-[var(--sf-border)] pb-2 mb-2.5">
+            <span class="font-mono font-black text-sm text-primary-400 tracking-wider">${formatPlate(truck.plate_number)}</span>
             <span class="px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border ${
               truck.gps_active
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                : 'bg-primary-500/10 text-primary-400 border-primary-500/20'
             }">${truck.gps_active ? 'GPS Real' : 'Simulado'}</span>
           </div>
           
           <p class="text-xs font-semibold mb-2.5 text-slate-300">
-            Chofer: <span class="text-white font-bold ml-1">${truck.driver_name || 'Sin Chofer'}</span>
+            Chofer: <span class="text-[var(--sf-text-main)] font-bold ml-1">${truck.driver_name || 'Sin Chofer'}</span>
             ${truck.driver_phone ? `<br/><span class="text-[10px] text-slate-400 font-mono mt-0.5 block">📞 ${truck.driver_phone}</span>` : ''}
           </p>
 
-          <div class="space-y-1.5 bg-white/5 p-2 rounded-xl border border-white/5 mb-3">
+          <div class="space-y-1.5 bg-white/5 p-2 rounded-xl border border-[var(--sf-border)] mb-3">
             <p class="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Carga Actual</p>
             <div class="flex justify-between text-xs">
-              <span class="text-indigo-300 font-medium">Llenos:</span>
-              <span class="font-black text-white">${truck.total_llenos} cil.</span>
+              <span class="text-primary-300 font-medium">Llenos:</span>
+              <span class="font-black text-[var(--sf-text-main)]">${truck.total_llenos} cil.</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-purple-300 font-medium">Envases Vacíos:</span>
-              <span class="font-black text-white">${truck.total_vacios} uds.</span>
+              <span class="font-black text-[var(--sf-text-main)]">${truck.total_vacios} uds.</span>
             </div>
           </div>
 
@@ -794,18 +848,18 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     ? `<span class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-black text-[9px] animate-pulse">⏳ Partida en ${countdown}s</span>`
                     : `<span class="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-black text-[9px] uppercase tracking-wider">En Ruta 🚀</span>`
                   return `
-                  <div class="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2.5">
+                  <div class="mt-2.5 pt-2.5 border-t border-[var(--sf-border)] flex items-center justify-between gap-2.5">
                     <div class="overflow-hidden flex-1">
                       <div class="flex items-center gap-1.5 mb-1.5">
                         <span class="text-[9px] uppercase font-bold text-rose-400 tracking-wider">Destino Despacho</span>
                         ${departureStatusHtml}
                       </div>
-                      <p class="text-xs font-black text-white truncate">${truck.destination.client_name}</p>
+                      <p class="text-xs font-black text-[var(--sf-text-main)] truncate">${truck.destination.client_name}</p>
                       <p class="text-[10px] text-slate-400 truncate mt-0.5">${truck.destination.address}</p>
                     </div>
                     <button 
                       onclick="window.clearTruckDispatch(${truck.id})"
-                      class="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-500 border border-rose-500/30 rounded-lg transition-all cursor-pointer shadow-lg shadow-rose-950/20 active:scale-95 shrink-0"
+                      class="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[var(--sf-text-main)] bg-rose-600 hover:bg-rose-500 border border-rose-500/30 rounded-lg transition-all cursor-pointer shadow-lg shadow-rose-950/20 active:scale-95 shrink-0"
                     >
                       Cancelar Despacho
                     </button>
@@ -867,9 +921,9 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
         const destPopupContent = `
           <div class="p-2 text-[var(--sf-text-main)]">
             <p class="text-[9px] uppercase font-bold text-rose-400 tracking-wider">Cliente de Despacho</p>
-            <h4 class="font-black text-sm text-white mb-1">${truck.destination.client_name}</h4>
+            <h4 class="font-black text-sm text-[var(--sf-text-main)] mb-1">${truck.destination.client_name}</h4>
             <p class="text-xs text-gray-300">${truck.destination.address}</p>
-            <p class="text-[10px] text-gray-500 mt-2">Camión Asignado: <span class="font-mono text-indigo-400">${formatPlate(truck.plate_number)}</span></p>
+            <p class="text-[10px] text-gray-500 mt-2">Camión Asignado: <span class="font-mono text-primary-400">${formatPlate(truck.plate_number)}</span></p>
           </div>
         `
 
@@ -914,10 +968,11 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           pathsRef.current[truck.id].setLatLngs(pathPoints)
         } else {
           const line = L.polyline(pathPoints, {
-            color: '#f43f5e',
-            dashArray: '5, 10',
-            weight: 2.5,
-            opacity: 0.8
+            color: '#a855f7',
+            weight: 6,
+            opacity: 0.9,
+            lineJoin: 'round',
+            lineCap: 'round'
           }).addTo(mapRef.current)
 
           pathsRef.current[truck.id] = line
@@ -959,9 +1014,9 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
       let statusText = 'Pendiente'
       
       if (order.status === 'accepted' || order.status === 'in_transit') {
-        bgColor = 'bg-indigo-500'
-        borderColor = 'border-indigo-300'
-        shadowColor = 'shadow-indigo-500/30'
+        bgColor = 'bg-primary-500'
+        borderColor = 'border-primary-300'
+        shadowColor = 'shadow-primary-500/30'
         statusText = 'En Camino'
       }
 
@@ -970,7 +1025,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-xl ${bgColor} ${borderColor} text-white ${shadowColor}">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
           </div>
-          <div class="px-1.5 py-0.5 mt-1 bg-slate-900 border border-white/20 rounded shadow text-[8px] font-black text-white uppercase truncate max-w-[80px]">
+          <div class="px-1.5 py-0.5 mt-1 bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded shadow text-[8px] font-black text-[var(--sf-text-main)] uppercase truncate max-w-[80px]">
             ${order.client_name.split(' ')[0]}
           </div>
         </div>
@@ -985,23 +1040,36 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
       const popupContent = `
         <div class="p-3 min-w-[200px] text-slate-200 font-sans leading-relaxed">
-          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
+          <div class="flex items-center justify-between border-b border-[var(--sf-border)] pb-2 mb-2.5">
             <span class="font-black text-sm text-sky-400 truncate pr-2">${order.client_name}</span>
-            <span class="px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border border-white/20 bg-white/10 text-white shrink-0">${statusText}</span>
+            <span class="px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border border-[var(--sf-border)] bg-white/10 text-[var(--sf-text-main)] shrink-0">${statusText}</span>
           </div>
           <div class="flex items-center justify-between mb-2">
             <p class="text-[10px] text-slate-400 truncate">${order.address}</p>
             <span class="text-[9px] font-bold text-emerald-400 ml-2 shrink-0">${formatTimeAgo(order.created_at)}</span>
           </div>
-          <div class="bg-black/30 rounded-lg p-2 border border-white/5 mb-2">
+          <div class="bg-[var(--sf-surface)] rounded-lg p-2 border border-[var(--sf-border)] mb-2">
             <p class="text-[9px] uppercase font-bold text-slate-500 tracking-wider mb-1">Detalle del Pedido</p>
-            <p class="text-xs font-medium text-white">${order.details?.quick_order || 'Pedido Personalizado'}</p>
+            ${order.details?.quick_order ? `
+              <p class="text-xs font-medium text-[var(--sf-text-main)] flex items-center gap-1.5">⚡ ${order.details.quick_order}</p>
+            ` : order.details?.items?.length > 0 ? `
+              <div class="space-y-1 mt-1.5">
+                ${order.details.items.map((item: any) => `
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-300 truncate pr-2">📦 ${item.name}</span>
+                    <span class="font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">${item.quantity}x</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : `
+              <p class="text-xs font-medium text-slate-400 italic">Sin detalle</p>
+            `}
           </div>
-          ${order.truck_id ? `<p class="text-[9px] text-indigo-300 font-bold uppercase text-center mt-2 border-t border-white/10 pt-2">Asignado a camión ID #${order.truck_id}</p>` : ''}
+          ${order.truck_id ? `<p class="text-[9px] text-primary-300 font-bold uppercase text-center mt-2 border-t border-[var(--sf-border)] pt-2">Asignado a camión ID #${order.truck_id}</p>` : ''}
           <button onclick="window.adminCancelOrder(${order.id})" class="mt-2 w-full py-2 text-[9px] uppercase tracking-wider font-black bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 border border-rose-500/30 rounded transition-colors shadow-sm">
             Rechazar Pedido
           </button>
-          ${!order.truck_id ? `<button onclick="window.adminAssignOrder(${order.id})" class="mt-1 w-full py-2 text-[9px] uppercase tracking-wider font-black bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 rounded transition-colors shadow-sm">Asignar a Chofer</button>` : ''}
+          ${!order.truck_id ? `<button onclick="window.adminAssignOrder(${order.id})" class="mt-1 w-full py-2 text-[9px] uppercase tracking-wider font-black bg-primary-600/20 hover:bg-primary-600/40 text-primary-400 border border-primary-500/30 rounded transition-colors shadow-sm">Asignar a Chofer</button>` : ''}
         </div>
       `
 
@@ -1055,12 +1123,12 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
         {/* Header Superior */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]/40 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-3">
-            <Link href="/trucks" className="p-2 rounded-xl bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-muted)] hover:text-white hover:bg-[var(--sf-border)] transition-colors">
+            <Link href="/trucks" className="p-2 rounded-xl bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:bg-[var(--sf-border)] transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-white tracking-tight">Monitoreo de Flota</h1>
+                <h1 className="text-xl font-black text-[var(--sf-text-main)] tracking-tight">Monitoreo de Flota</h1>
                 <span className="flex h-2.5 w-2.5 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -1074,7 +1142,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           <button 
             onClick={() => fetchLocations(false)} 
             disabled={refreshing}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-[var(--sf-bg)] border border-[var(--sf-border)] text-white hover:bg-[var(--sf-border)] transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-main)] hover:bg-[var(--sf-border)] transition-all active:scale-95 disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             Sincronizar
@@ -1100,7 +1168,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
               }
             }}
             className={`absolute bottom-6 right-6 lg:bottom-10 lg:right-10 z-[400] flex items-center gap-2 px-5 py-3 lg:px-6 lg:py-4 rounded-full font-black text-sm uppercase shadow-2xl transition-all border ${
-              isOrderModalOpen ? 'bg-amber-500 text-amber-950 border-amber-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/50'
+              isOrderModalOpen ? 'bg-amber-500 text-amber-950 border-amber-400' : 'bg-primary-600 hover:bg-primary-500 text-white border-primary-500/50'
             }`}
           >
             <Package className="w-5 h-5" /> {isOrderModalOpen ? 'Cerrar' : 'Nuevo Pedido'}
@@ -1110,7 +1178,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           {isCapturingCoords && (
             <>
               <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[400] pointer-events-none animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="bg-slate-900/80 backdrop-blur text-white px-4 py-2 rounded-full font-bold text-xs shadow-xl border border-white/10 animate-bounce">
+                <div className="glass-panel text-[var(--sf-text-main)] px-4 py-2 rounded-full font-bold text-xs shadow-xl border border-[var(--sf-border)] animate-bounce">
                   Mueve el mapa para ajustar
                 </div>
               </div>
@@ -1118,7 +1186,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
               {/* Pin Fijo en el centro */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-[400] pointer-events-none mt-2">
                 <div className="flex flex-col items-center relative">
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-black/40 rounded-full blur-[1.5px]"></div>
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-[var(--sf-surface)] rounded-full blur-[1.5px]"></div>
                   
                   <div className="relative text-amber-500 drop-shadow-[0_10px_10px_rgba(245,158,11,0.5)] animate-bounce">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1127,7 +1195,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     </svg>
                   </div>
 
-                  <div className="absolute top-[-20px] px-3 py-1 bg-slate-900/90 backdrop-blur-md text-white text-[10px] font-black rounded-full shadow-xl whitespace-nowrap border border-white/10">
+                  <div className="absolute top-[-20px] px-3 py-1 glass-panel text-[var(--sf-text-main)] text-[10px] font-black rounded-full shadow-xl whitespace-nowrap border border-[var(--sf-border)]">
                     Destino
                   </div>
                 </div>
@@ -1137,7 +1205,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[400] flex items-center gap-3">
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsCapturingCoords(false); }}
-                  className="px-6 py-4 rounded-full font-black text-sm uppercase shadow-2xl transition-all border bg-slate-800 hover:bg-slate-700 text-white border-white/10 active:scale-95"
+                  className="px-6 py-4 rounded-full font-black text-sm uppercase shadow-2xl transition-all border bg-slate-800 hover:bg-slate-700 text-[var(--sf-text-main)] border-[var(--sf-border)] active:scale-95"
                 >
                   Cancelar
                 </button>
@@ -1173,7 +1241,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
           )}
 
           {/* SIDEBAR FLOTANTE DE CONTROL (Glassmorphic) */}
-          <div className="absolute top-4 left-4 z-10 w-96 max-h-[calc(100%-32px)] bg-[var(--sf-surface)]/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+          <div className="absolute top-4 left-4 z-10 w-96 max-h-[calc(100%-32px)] bg-[var(--sf-surface)]/70 backdrop-blur-xl border border-[var(--sf-border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
             
             {/* Cabecera del Acordeón para la Lista de Vehículos */}
             <div 
@@ -1184,15 +1252,15 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                   setIsOrdersListExpanded(false)
                 }
               }}
-              className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
+              className="p-4 border-b border-[var(--sf-border)] bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
             >
-              <h2 className="font-bold text-sm text-white flex items-center gap-2">
-                <Activity className="w-4 h-4 text-indigo-400" />
+              <h2 className="font-bold text-sm text-[var(--sf-text-main)] flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary-400" />
                 Vehículos ({trucks.length})
               </h2>
               <div className="flex items-center gap-2.5">
-                {refreshing && <span className="text-[10px] font-medium text-indigo-400 animate-pulse">Actualizando...</span>}
-                <span className="text-gray-400 hover:text-white transition-colors text-[10px]">
+                {refreshing && <span className="text-[10px] font-medium text-primary-400 animate-pulse">Actualizando...</span>}
+                <span className="text-gray-400 hover:text-[var(--sf-text-main)] transition-colors text-[10px]">
                   {isListExpanded ? '▲ COLAPSAR' : '▼ EXPANDIR'}
                 </span>
               </div>
@@ -1201,20 +1269,20 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
             {/* Contenido de la Lista de Vehículos */}
             <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isListExpanded ? 'flex-1 flex flex-col' : 'h-0 border-b-0'}`}>
               {isListExpanded && (
-                <div className="p-3 border-b border-white/5 shrink-0 bg-black/20">
+                <div className="p-3 border-b border-[var(--sf-border)] shrink-0 bg-[var(--sf-surface-hover)]">
                   <input
                     type="text"
                     placeholder="Buscar por patente o chofer..."
                     value={searchTruck}
                     onChange={(e) => setSearchTruck(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50"
+                    className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg px-3 py-2 text-xs text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)] focus:outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/50"
                   />
                 </div>
               )}
               {loading ? (
                 <div className="p-8 text-center text-[var(--sf-text-muted)] flex flex-col items-center justify-center gap-3">
-                  <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
+                  <RefreshCw className="w-8 h-8 animate-spin text-primary-400" />
                   <p className="text-xs font-bold">Cargando mapa y flota...</p>
                 </div>
               ) : (
@@ -1232,19 +1300,19 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                           onClick={() => flyToTruck(truck)}
                           className={`p-3 rounded-xl border transition-all duration-300 cursor-pointer ${
                             selectedTruckId === truck.id
-                              ? 'bg-indigo-500/10 border-indigo-500/50 shadow-lg shadow-indigo-500/5'
-                              : 'bg-black/20 hover:bg-black/30 border-white/5 hover:border-white/10'
+                              ? 'bg-primary-500/10 border-primary-500/50 shadow-lg shadow-primary-500/5'
+                              : 'bg-[var(--sf-surface)] hover:bg-[var(--sf-surface-hover)] border-[var(--sf-border)] hover:border-[var(--sf-border)]'
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2.5">
                               <div className={`p-2 rounded-lg ${
-                                truck.gps_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-indigo-500/10 text-indigo-400'
+                                truck.gps_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary-500/10 text-primary-400'
                               }`}>
                                 <TruckIcon className="w-4 h-4" />
                               </div>
                               <div>
-                                <span className="font-mono font-black text-sm text-white tracking-widest block">
+                                <span className="font-mono font-black text-sm text-[var(--sf-text-main)] tracking-widest block">
                                   {formatPlate(truck.plate_number)}
                                 </span>
                                 <span className="text-[10px] text-gray-400 font-medium">
@@ -1256,7 +1324,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                             <span className={`px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border flex items-center gap-1 ${
                               truck.gps_active
                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                                : 'bg-primary-500/10 text-primary-400 border-primary-500/20'
                             }`}>
                               {truck.gps_active ? (
                                 <><Wifi className="w-2.5 h-2.5" /> GPS Real</>
@@ -1267,16 +1335,16 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                           </div>
 
                           {/* Info de stock a bordo */}
-                          <div className="mt-3 grid grid-cols-2 gap-2 bg-black/30 p-2 rounded-lg border border-white/5">
+                          <div className="mt-3 grid grid-cols-2 gap-2 bg-[var(--sf-surface)] p-2 rounded-lg border border-[var(--sf-border)]">
                             <div className="flex items-center gap-1 text-[11px]">
-                              <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                              <Package className="w-3.5 h-3.5 text-primary-400 shrink-0" />
                               <span className="text-gray-400">Llenos:</span>
-                              <strong className="text-white ml-auto">{truck.total_llenos}</strong>
+                              <strong className="text-[var(--sf-text-main)] ml-auto">{truck.total_llenos}</strong>
                             </div>
                             <div className="flex items-center gap-1 text-[11px]">
                               <Box className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                               <span className="text-gray-400">Vacíos:</span>
-                              <strong className="text-white ml-auto">{truck.total_vacios}</strong>
+                              <strong className="text-[var(--sf-text-main)] ml-auto">{truck.total_vacios}</strong>
                             </div>
                           </div>
 
@@ -1316,30 +1384,30 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                   setIsDetailExpanded(false)
                 }
               }}
-              className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
+              className="p-4 border-b border-[var(--sf-border)] bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
             >
-              <h2 className="font-bold text-sm text-white flex items-center gap-2">
+              <h2 className="font-bold text-sm text-[var(--sf-text-main)] flex items-center gap-2">
                 <Package className="w-4 h-4 text-emerald-400" />
                 Pedidos Activos ({orders.length})
               </h2>
               <div className="flex items-center gap-2.5">
-                <span className="text-gray-400 hover:text-white transition-colors text-[10px]">
+                <span className="text-gray-400 hover:text-[var(--sf-text-main)] transition-colors text-[10px]">
                   {isOrdersListExpanded ? '▲ COLAPSAR' : '▼ EXPANDIR'}
                 </span>
               </div>
             </div>
 
             {/* Contenido de la Lista de Pedidos */}
-            <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isOrdersListExpanded ? 'flex-1 flex flex-col border-b border-white/10 bg-white/5' : 'h-0'}`}>
+            <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isOrdersListExpanded ? 'flex-1 flex flex-col border-b border-[var(--sf-border)] bg-white/5' : 'h-0'}`}>
               {isOrdersListExpanded && (
-                <div className="p-3 border-b border-white/5 shrink-0 bg-black/20">
+                <div className="p-3 border-b border-[var(--sf-border)] shrink-0 bg-[var(--sf-surface-hover)]">
                   <input
                     type="text"
                     placeholder="Buscar por cliente o dirección..."
                     value={searchOrder}
                     onChange={(e) => setSearchOrder(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
+                    className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg px-3 py-2 text-xs text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)] focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
                   />
                 </div>
               )}
@@ -1362,16 +1430,36 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                             if (marker) setTimeout(() => marker.openPopup(), 1500)
                           }
                         }}
-                        className="p-3 rounded-xl border bg-black/20 hover:bg-black/30 border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer"
+                        className="p-3 rounded-xl border bg-[var(--sf-surface)] hover:bg-[var(--sf-surface-hover)] border-[var(--sf-border)] hover:border-[var(--sf-border)] transition-all duration-300 cursor-pointer"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <span className="font-black text-sm text-white block">{order.client_name}</span>
+                            <span className="font-black text-sm text-[var(--sf-text-main)] block">{order.client_name}</span>
                             <span className="text-[10px] text-gray-400 block truncate max-w-[180px]">{order.address}</span>
+                            <details className="mt-2 group" onClick={(e) => e.stopPropagation()}>
+                              <summary className="text-[10px] text-slate-300 font-medium cursor-pointer select-none hover:text-[var(--sf-text-main)] transition-colors list-none flex items-center gap-1">
+                                <span className="text-[8px] opacity-50 transition-transform group-open:rotate-90">▶</span>
+                                Ver detalle
+                              </summary>
+                              <div className="mt-1.5 pl-3 border-l-2 border-slate-700/50 space-y-1">
+                                {order.details?.quick_order ? (
+                                  <p className="text-[10px] text-slate-300">⚡ {order.details.quick_order}</p>
+                                ) : order.details?.items?.length > 0 ? (
+                                  order.details.items.map((item: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center text-[10px]">
+                                      <span className="text-slate-400 truncate pr-2">{item.name}</span>
+                                      <span className="font-bold text-primary-400">{item.quantity}x</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-[10px] text-slate-500 italic">Sin detalle</p>
+                                )}
+                              </div>
+                            </details>
                           </div>
                           <div className="flex flex-col items-end gap-1.5">
                             <span className={`px-2 py-0.5 text-[8px] uppercase tracking-wider font-extrabold rounded border ${
-                              isPending ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                              isPending ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-primary-500/10 text-primary-400 border-primary-500/20'
                             }`}>
                               {isPending ? 'Pendiente' : 'En Camino'}
                             </span>
@@ -1390,7 +1478,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                                   e.stopPropagation()
                                   handleAdminAssignOrder(order.id)
                                 }}
-                                className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider"
+                                className="text-[9px] font-bold text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-wider"
                               >
                                 Asignar
                               </button>
@@ -1399,11 +1487,116 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         </div>
                         <div className="flex items-center justify-between text-[10px]">
                           <span className="text-gray-500">{formatTimeAgo(order.created_at)}</span>
-                          {order.truck_id && <span className="font-mono text-indigo-400 font-bold">Camión #{order.truck_id}</span>}
+                          {order.truck_id && <span className="font-mono text-primary-400 font-bold">Camión #{order.truck_id}</span>}
                         </div>
                       </div>
                     )
                   })
+                )}
+              </div>
+            </div>
+
+            {/* Cabecera del Acordeón para la Lista de Clientes */}
+            <div 
+              onClick={() => {
+                setIsCustomersListExpanded(!isCustomersListExpanded)
+                if (!isCustomersListExpanded) {
+                  setIsListExpanded(false)
+                  setIsDetailExpanded(false)
+                  setIsOrdersListExpanded(false)
+                }
+              }}
+              className="p-4 border-b border-[var(--sf-border)] bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
+            >
+              <h2 className="font-bold text-sm text-[var(--sf-text-main)] flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-400" />
+                Clientes (CRM)
+              </h2>
+              <div className="flex items-center gap-2.5">
+                <span className="text-gray-400 hover:text-[var(--sf-text-main)] transition-colors text-[10px]">
+                  {isCustomersListExpanded ? '▲ COLAPSAR' : '▼ EXPANDIR'}
+                </span>
+              </div>
+            </div>
+
+            {/* Contenido de la Lista de Clientes */}
+            <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isCustomersListExpanded ? 'flex-1 flex flex-col border-b border-[var(--sf-border)] bg-white/5' : 'h-0 border-b-0'}`}>
+              {isCustomersListExpanded && (
+                <div className="p-3 border-b border-[var(--sf-border)] shrink-0 bg-[var(--sf-surface-hover)]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--sf-text-muted)]" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre, teléfono..."
+                      value={searchCustomer}
+                      onChange={(e) => setSearchCustomer(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg pl-9 pr-3 py-2 text-xs text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)] focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50"
+                    />
+                    {isSearchingCustomers && (
+                      <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-purple-400 animate-spin" />
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="p-3 space-y-2.5 overflow-y-auto flex-1">
+                {searchCustomer.trim().length > 0 && searchCustomer.trim().length < 2 ? (
+                  <div className="p-8 text-center text-[var(--sf-text-muted)] italic text-xs">
+                    Escribe al menos 2 letras para buscar.
+                  </div>
+                ) : customersList.length === 0 ? (
+                  <div className="p-8 text-center text-[var(--sf-text-muted)] italic text-xs">
+                    {isSearchingCustomers ? 'Buscando...' : 'No se encontraron clientes.'}
+                  </div>
+                ) : (
+                  customersList.map((customer: any) => (
+                    <div 
+                      key={customer.id}
+                      className="p-3 rounded-xl border bg-[var(--sf-surface)] border-[var(--sf-border)]"
+                    >
+                      <div className="flex items-start justify-between mb-2 border-b border-[var(--sf-border)] pb-2">
+                        <div>
+                          <span className="font-black text-sm text-[var(--sf-text-main)] block">{customer.first_name} {customer.last_name}</span>
+                          <span className="text-[10px] text-gray-400 block mt-0.5">{customer.phone}</span>
+                        </div>
+                      </div>
+                      
+                      {customer.addresses?.length > 0 ? (
+                        <div className="space-y-2 mt-2">
+                          <p className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Direcciones Guardadas</p>
+                          {customer.addresses.map((addr: any) => (
+                            <button
+                              key={addr.id}
+                              onClick={() => {
+                                setNewOrderForm({
+                                  ...newOrderForm,
+                                  client_name: `${customer.first_name} ${customer.last_name}`,
+                                  phone: customer.phone,
+                                  address: addr.address,
+                                })
+                                setLatitude(addr.latitude || null)
+                                setLongitude(addr.longitude || null)
+                                setIsOrderModalOpen(true)
+                                if (addr.latitude && addr.longitude && mapRef.current) {
+                                  mapRef.current.flyTo([addr.latitude, addr.longitude], 17)
+                                }
+                              }}
+                              className="w-full text-left p-2 rounded-lg bg-[var(--sf-surface-hover)] hover:bg-purple-500/10 border border-transparent hover:border-purple-500/30 transition-colors group flex items-start gap-2"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-purple-400 mt-0.5 shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-xs text-[var(--sf-text-main)] line-clamp-1">{addr.address}</p>
+                                {addr.reference && <p className="text-[9px] text-gray-500 line-clamp-1 mt-0.5">{addr.reference}</p>}
+                              </div>
+                              <span className="text-[9px] font-bold text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">Pedir</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-gray-500 italic">Sin direcciones guardadas.</p>
+                      )}
+                    </div>
+                  ))
                 )}
               </div>
             </div>
@@ -1418,10 +1611,10 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     setIsOrdersListExpanded(false)
                   }
                 }}
-                className="p-4 border-t border-white/10 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
+                className="p-4 border-t border-[var(--sf-border)] bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors select-none shrink-0"
               >
-                <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                  <TruckIcon className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <h3 className="font-bold text-sm text-[var(--sf-text-main)] flex items-center gap-2">
+                  <TruckIcon className="w-4 h-4 text-primary-400 animate-pulse" />
                   Detalle Camión: {formatPlate(selectedTruck.plate_number)}
                 </h3>
                 <div className="flex items-center gap-3">
@@ -1437,13 +1630,13 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     }}
                     className={`px-2 py-1 text-[9px] font-black uppercase rounded border transition-colors ${
                       followedTruckId === selectedTruck.id
-                        ? 'bg-indigo-500 text-white border-indigo-400 shadow-lg shadow-indigo-500/30'
-                        : 'bg-transparent text-indigo-400 border-indigo-500/50 hover:bg-indigo-500/20'
+                        ? 'bg-primary-500 text-white border-primary-400 shadow-lg shadow-primary-500/30'
+                        : 'bg-transparent text-primary-400 border-primary-500/50 hover:bg-primary-500/20'
                     }`}
                   >
                     {followedTruckId === selectedTruck.id ? 'Dejar de Seguir' : 'Seguir'}
                   </button>
-                  <span className="text-gray-400 hover:text-white transition-colors text-[10px]">
+                  <span className="text-gray-400 hover:text-[var(--sf-text-main)] transition-colors text-[10px]">
                     {isDetailExpanded ? '▲' : '▼'}
                   </span>
                 </div>
@@ -1452,7 +1645,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
             {/* Contenido del Detalle (Ficha Resumen) */}
             {selectedTruck && (
-              <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isDetailExpanded ? 'flex-1 p-4 border-t border-white/10 bg-white/5 overflow-y-auto gap-3' : 'h-0'}`}>
+              <div className={`transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${isDetailExpanded ? 'flex-1 p-4 border-t border-[var(--sf-border)] bg-white/5 overflow-y-auto gap-3' : 'h-0'}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-black text-xs uppercase tracking-wider text-gray-400">Rendimiento Hoy</h3>
@@ -1461,20 +1654,20 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-center">
                         <span className="block text-[10px] uppercase font-bold text-emerald-400 mb-0.5">Completados</span>
-                        <span className="block text-lg font-black text-white">{selectedTruck.metrics.completed}</span>
+                        <span className="block text-lg font-black text-[var(--sf-text-main)]">{selectedTruck.metrics.completed}</span>
                       </div>
-                      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-2 text-center">
-                        <span className="block text-[10px] uppercase font-bold text-indigo-400 mb-0.5">En Curso</span>
-                        <span className="block text-lg font-black text-white">{selectedTruck.metrics.accepted}</span>
+                      <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-2 text-center">
+                        <span className="block text-[10px] uppercase font-bold text-primary-400 mb-0.5">En Curso</span>
+                        <span className="block text-lg font-black text-[var(--sf-text-main)]">{selectedTruck.metrics.accepted}</span>
                       </div>
                       <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-2 text-center">
                         <span className="block text-[10px] uppercase font-bold text-rose-400 mb-0.5">Cancelados</span>
-                        <span className="block text-lg font-black text-white">{selectedTruck.metrics.cancelled}</span>
+                        <span className="block text-lg font-black text-[var(--sf-text-main)]">{selectedTruck.metrics.cancelled}</span>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center mb-2 pt-2 border-t border-white/5">
+                  <div className="flex justify-between items-center mb-2 pt-2 border-t border-[var(--sf-border)]">
                     <h3 className="font-black text-xs uppercase tracking-wider text-gray-400">Bodega Móvil</h3>
                     <span className="text-[10px] font-mono text-gray-400 italic font-medium">{selectedTruck.warehouse_name}</span>
                   </div>
@@ -1487,7 +1680,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         {selectedTruck.products.map((prod, idx) => (
                           <div key={`prod-${idx}`} className="flex justify-between items-center text-xs">
                             <span className="text-gray-300 truncate max-w-[180px]">{prod.name}</span>
-                            <span className="font-black text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/10 shrink-0">
+                            <span className="font-black text-primary-400 bg-primary-500/10 px-1.5 py-0.5 rounded border border-primary-500/10 shrink-0">
                               {prod.quantity} unidades
                             </span>
                           </div>
@@ -1507,12 +1700,12 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
                 {/* Panel de Despacho Express / Simulación */}
                 {selectedTruck.destination ? (
-                  <div className="pt-3 border-t border-white/10">
+                  <div className="pt-3 border-t border-[var(--sf-border)]">
                     <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start justify-between gap-2">
                       <div className="overflow-hidden">
                         <span className="text-[8px] uppercase tracking-wider text-rose-400 font-extrabold block mb-1">Ruta de Despacho Activa</span>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <h4 className="font-black text-xs text-white truncate max-w-[120px]">{selectedTruck.destination.client_name}</h4>
+                          <h4 className="font-black text-xs text-[var(--sf-text-main)] truncate max-w-[120px]">{selectedTruck.destination.client_name}</h4>
                           {getDepartureCountdown(selectedTruck.departure_time) !== null ? (
                             <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-black text-[9px] animate-pulse whitespace-nowrap">
                               ⏳ Espera: {getDepartureCountdown(selectedTruck.departure_time)}s
@@ -1528,7 +1721,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleClearDestination(selectedTruck.id); }}
-                        className="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/30 rounded-lg transition-all shrink-0 active:scale-95"
+                        className="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[var(--sf-text-main)] bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/30 rounded-lg transition-all shrink-0 active:scale-95"
                       >
                         Cancelar Despacho
                       </button>
@@ -1585,16 +1778,16 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
         {/* Modal UI */}
         {isOrderModalOpen && (
-          <div className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md md:max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
-              <h2 className="text-xl font-black text-white mb-2 flex items-center gap-2 shrink-0">
-                <Package className="text-indigo-400" /> Crear Pedido Manual
+          <div className="absolute inset-0 z-[1000] bg-[var(--sf-surface)] backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl p-6 w-full max-w-md md:max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
+              <h2 className="text-xl font-black text-[var(--sf-text-main)] mb-2 flex items-center gap-2 shrink-0">
+                <Package className="text-primary-400" /> Crear Pedido Manual
               </h2>
               
               <div className="flex items-center gap-2 mb-6 shrink-0">
-                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 1 ? 'bg-indigo-500' : 'bg-white/10'}`} />
-                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 2 ? 'bg-indigo-500' : 'bg-white/10'}`} />
-                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 3 ? 'bg-indigo-500' : 'bg-white/10'}`} />
+                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 1 ? 'bg-primary-500' : 'bg-white/10'}`} />
+                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 2 ? 'bg-primary-500' : 'bg-white/10'}`} />
+                <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 3 ? 'bg-primary-500' : 'bg-white/10'}`} />
               </div>
 
               <div className="flex-1 overflow-y-auto pr-1 space-y-4">
@@ -1615,7 +1808,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                           setIsOrderModalOpen(false)
                           setIsCapturingCoords(true)
                         }}
-                        className="px-3 py-1.5 shrink-0 bg-black/40 hover:bg-black/60 border border-white/20 rounded-lg text-[10px] font-black uppercase text-white transition-all active:scale-95"
+                        className="px-3 py-1.5 shrink-0 bg-[var(--sf-surface)] hover:bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg text-[10px] font-black uppercase text-[var(--sf-text-main)] transition-all active:scale-95"
                       >
                         {latitude ? 'Cambiar' : 'Fijar Mapa'}
                       </button>
@@ -1624,14 +1817,14 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-400 mb-1">Nombre Cliente</label>
-                        <input value={newOrderForm.client_name} onChange={e => setNewOrderForm({...newOrderForm, client_name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500" placeholder="Ej: Juan Pérez" />
+                        <input value={newOrderForm.client_name} onChange={e => setNewOrderForm({...newOrderForm, client_name: e.target.value})} className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg p-2 text-[var(--sf-text-main)] outline-none focus:border-primary-500" placeholder="Ej: Juan Pérez" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-400 mb-1">Teléfono</label>
                         <PhoneInput
                           value={newOrderForm.phone}
                           onValueChange={(val) => setNewOrderForm({...newOrderForm, phone: val})}
-                          className="!w-full !bg-black/40 !border-white/10 !rounded-lg !p-2 !text-white !outline-none focus:!border-indigo-500"
+                          className="!w-full !bg-[var(--sf-surface)] !border-[var(--sf-border)] !rounded-lg !p-2 !text-[var(--sf-text-main)] !outline-none focus:!border-primary-500"
                         />
                       </div>
                     </div>
@@ -1641,7 +1834,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         Dirección Escrita {latitude ? <span className="text-emerald-400 font-normal">(Ubicada en mapa)</span> : ''}
                       </label>
                       <div className="flex gap-2">
-                        <input value={newOrderForm.address} onChange={e => setNewOrderForm({...newOrderForm, address: e.target.value})} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500" placeholder="Ej: Av. Providencia 1234" />
+                        <input value={newOrderForm.address} onChange={e => setNewOrderForm({...newOrderForm, address: e.target.value})} className="flex-1 bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg p-2 text-[var(--sf-text-main)] outline-none focus:border-primary-500" placeholder="Ej: Av. Providencia 1234" />
                         <button
                           type="button"
                           onClick={async () => {
@@ -1665,7 +1858,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                               Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Error de red al buscar', showConfirmButton: false, timer: 2000, background: 'var(--sf-glass-panel-bg1)', color: 'white' });
                             }
                           }}
-                          className="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition-all active:scale-95"
+                          className="shrink-0 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold text-xs transition-all active:scale-95"
                         >
                           Buscar en Mapa
                         </button>
@@ -1679,7 +1872,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-xs font-bold text-gray-400">¿Qué pide el cliente?</label>
                       {mode !== 'choose' && (
-                        <button type="button" onClick={() => setMode('choose')} className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300">
+                        <button type="button" onClick={() => setMode('choose')} className="text-[10px] font-bold text-primary-400 hover:text-primary-300">
                           Cambiar Modalidad
                         </button>
                       )}
@@ -1690,13 +1883,13 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         <button
                           type="button"
                           onClick={() => setMode('cart')}
-                          className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 hover:border-indigo-500/50 transition-all active:scale-95 text-center group"
+                          className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-[var(--sf-surface)] hover:bg-[var(--sf-surface)] border border-[var(--sf-border)] hover:border-primary-500/50 transition-all active:scale-95 text-center group"
                         >
-                          <div className="w-10 h-10 rounded-full bg-slate-800 shadow-inner flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-full bg-slate-800 shadow-inner flex items-center justify-center text-primary-400 group-hover:scale-110 transition-transform">
                             <Package className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="font-bold text-white text-xs">Catálogo</p>
+                            <p className="font-bold text-[var(--sf-text-main)] text-xs">Catálogo</p>
                             <p className="text-[9px] text-slate-500 mt-0.5">Elegir envases</p>
                           </div>
                         </button>
@@ -1704,13 +1897,13 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         <button
                           type="button"
                           onClick={() => setMode('quick')}
-                          className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 hover:border-amber-500/50 transition-all active:scale-95 text-center group"
+                          className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-[var(--sf-surface)] hover:bg-[var(--sf-surface)] border border-[var(--sf-border)] hover:border-amber-500/50 transition-all active:scale-95 text-center group"
                         >
                           <div className="w-10 h-10 rounded-full bg-slate-800 shadow-inner flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
                             <Zap className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="font-bold text-white text-xs">Rápido</p>
+                            <p className="font-bold text-[var(--sf-text-main)] text-xs">Rápido</p>
                             <p className="text-[9px] text-slate-500 mt-0.5">Escribir/Hablar</p>
                           </div>
                         </button>
@@ -1721,14 +1914,14 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                       <div className="relative">
                         <label className="block text-[10px] font-bold text-amber-400/80 mb-1">Dictar o Escribir pedido <Mic className="inline w-3 h-3 text-red-400 animate-pulse ml-1" style={{ display: isListening ? 'inline' : 'none' }} /></label>
                         <div className="relative">
-                          <input value={newOrderForm.quick_order} onChange={e => setNewOrderForm({...newOrderForm, quick_order: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 pr-10 text-white outline-none focus:border-amber-500/50" placeholder="Ej: 1x 15kg, 2x 11kg" autoFocus />
+                          <input value={newOrderForm.quick_order} onChange={e => setNewOrderForm({...newOrderForm, quick_order: e.target.value})} className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg p-2 pr-10 text-[var(--sf-text-main)] outline-none focus:border-amber-500/50" placeholder="Ej: 1x 15kg, 2x 11kg" autoFocus />
                           <button
                             type="button"
                             onClick={toggleDictation}
                             className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
                               isListening 
-                                ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse' 
-                                : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
+                                ? 'bg-red-500 text-[var(--sf-text-main)] shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse' 
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-[var(--sf-text-main)]'
                             }`}
                           >
                             <Mic className="w-3.5 h-3.5" />
@@ -1747,17 +1940,17 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
                 {orderStep === 3 && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="bg-black/30 border border-white/5 rounded-xl p-4">
-                      <h3 className="text-white font-bold text-sm mb-3">Resumen del Pedido</h3>
+                    <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-xl p-4">
+                      <h3 className="text-[var(--sf-text-main)] font-bold text-sm mb-3">Resumen del Pedido</h3>
                       <p className="text-xs text-gray-400 mb-1"><strong className="text-gray-300">Cliente:</strong> {newOrderForm.client_name || 'Sin nombre'} {newOrderForm.phone && `(${newOrderForm.phone})`}</p>
                       <p className="text-xs text-gray-400 mb-3"><strong className="text-gray-300">Dirección:</strong> {newOrderForm.address || 'Marcada en mapa'}</p>
                       
-                      <div className="border-t border-white/10 pt-3">
+                      <div className="border-t border-[var(--sf-border)] pt-3">
                         <strong className="text-gray-300 text-xs block mb-1">Productos:</strong>
                         {mode === 'quick' ? (
                           <p className="text-amber-400 text-sm font-bold">{newOrderForm.quick_order || 'Nada especificado'}</p>
                         ) : cart.length > 0 ? (
-                          <ul className="text-sm text-indigo-300 font-medium">
+                          <ul className="text-sm text-primary-300 font-medium">
                             {cart.map((item, i) => <li key={i}>{item.quantity}x {item.brand_name} {item.name}</li>)}
                           </ul>
                         ) : (
@@ -1768,17 +1961,17 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
                     <div>
                       <label className="block text-xs font-bold text-gray-400 mb-1">Notas Adicionales (Opcional)</label>
-                      <textarea rows={2} value={newOrderForm.notes} onChange={e => setNewOrderForm({...newOrderForm, notes: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500 resize-none" placeholder="Instrucciones de entrega, color de la casa, etc..." />
+                      <textarea rows={2} value={newOrderForm.notes} onChange={e => setNewOrderForm({...newOrderForm, notes: e.target.value})} className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-lg p-2 text-[var(--sf-text-main)] outline-none focus:border-primary-500 resize-none" placeholder="Instrucciones de entrega, color de la casa, etc..." />
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-white/10 mt-4 shrink-0">
+              <div className="flex gap-3 pt-4 border-t border-[var(--sf-border)] mt-4 shrink-0">
                 {orderStep === 1 ? (
-                  <button type="button" onClick={() => { setIsOrderModalOpen(false); setOrderStep(1); }} className="flex-1 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 font-bold transition-colors">Cancelar</button>
+                  <button type="button" onClick={() => { setIsOrderModalOpen(false); setOrderStep(1); }} className="flex-1 py-2.5 rounded-xl border border-[var(--sf-border)] hover:bg-white/5 text-gray-300 font-bold transition-colors">Cancelar</button>
                 ) : (
-                  <button type="button" onClick={() => setOrderStep(orderStep - 1)} className="flex-1 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 font-bold transition-colors">Atrás</button>
+                  <button type="button" onClick={() => setOrderStep(orderStep - 1)} className="flex-1 py-2.5 rounded-xl border border-[var(--sf-border)] hover:bg-white/5 text-gray-300 font-bold transition-colors">Atrás</button>
                 )}
 
                 {orderStep < 3 ? (
@@ -1806,7 +1999,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                       }
                       setOrderStep(orderStep + 1)
                     }} 
-                    className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold transition-colors"
                   >
                     Siguiente
                   </button>

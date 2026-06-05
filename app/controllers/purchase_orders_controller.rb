@@ -4,14 +4,14 @@ class PurchaseOrdersController < ApplicationController
   def index
     orders = FilterPurchasesService.call(params)
 
-    if params[:format] == 'xlsx'
-      send_data ExportPurchasesService.new(orders).to_xlsx, filename: "compras-#{Date.today}.xlsx", type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    if params[:format] == "xlsx"
+      send_data ExportPurchasesService.new(orders, params[:theme]).to_xlsx, filename: "compras-#{Date.today}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     else
       pagy, records = pagy(:offset, orders, limit: 20)
       suppliers = Supplier.active.ordered_by_name
 
       render inertia: "Purchases/Orders/Index", props: {
-        orders: records.as_json(include: :supplier),
+        orders: records.as_json(include: :supplier, methods: [:net_total, :tax_total]),
         suppliers: suppliers,
         pagination: extract_pagy(pagy),
         currentSearch: params[:search]
@@ -21,10 +21,10 @@ class PurchaseOrdersController < ApplicationController
 
   def show
     order = PurchaseOrder.with_full_details.find(params[:id])
-    
-    if params[:format] == 'pdf'
-      pdf_data = GeneratePurchaseOrderPdfService.new(order).call
-      send_data pdf_data, filename: "OC-#{order.id.to_s.rjust(4, '0')}.pdf", type: 'application/pdf', disposition: 'inline'
+
+    if params[:format] == "pdf"
+      pdf_data = GeneratePurchaseOrderPdfService.new(order, params[:theme]).call
+      send_data pdf_data, filename: "OC-#{order.id.to_s.rjust(4, '0')}.pdf", type: "application/pdf", disposition: "inline"
     else
       products = Product.active.ordered_by_name.with_details
 

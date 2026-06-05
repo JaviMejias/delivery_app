@@ -33,7 +33,7 @@ export default function RadarActiveDispatch({ data, completing, onComplete, onCa
 
   return (
     <div className="relative overflow-hidden flex flex-col shrink-0 transition-all duration-300">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-emerald-500"></div>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-emerald-500"></div>
       
       <div className="p-4 flex items-center justify-between select-none">
         <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
@@ -56,7 +56,7 @@ export default function RadarActiveDispatch({ data, completing, onComplete, onCa
       <div className="flex flex-col overflow-y-auto p-4 pt-0">
 
         <div className="space-y-1 mb-3">
-          <p className="text-white font-black text-lg truncate w-[75%]">{data.truck.destination_client_name}</p>
+          <p className="text-[var(--sf-text-main)] font-black text-lg truncate w-[75%]">{data.truck.destination_client_name}</p>
           <div className="flex items-start gap-1.5 text-slate-300 text-sm">
             <MapPin className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
             <p className="line-clamp-2">{data.truck.destination_address}</p>
@@ -68,7 +68,7 @@ export default function RadarActiveDispatch({ data, completing, onComplete, onCa
                 <a href={`tel:${data.truck.active_order_phone}`} className="hover:text-emerald-300 transition-colors font-semibold">{data.truck.active_order_phone}</a>
               </div>
               <a
-                href={`https://wa.me/${data.truck.active_order_phone.replace(/\\D/g, '').startsWith('569') ? data.truck.active_order_phone.replace(/\\D/g, '') : '569' + data.truck.active_order_phone.replace(/\\D/g, '').slice(-8)}?text=${encodeURIComponent('Hola ' + data.truck.destination_client_name + ', soy el repartidor y voy en camino con tu pedido.')}`}
+                href={`https://wa.me/${data.truck.active_order_phone.replace(/\D/g, '').startsWith('569') ? data.truck.active_order_phone.replace(/\D/g, '') : '569' + data.truck.active_order_phone.replace(/\D/g, '').slice(-8)}?text=${encodeURIComponent('Hola ' + data.truck.destination_client_name + ', soy el repartidor y voy en camino con tu pedido.')}`}
                 target="_blank" rel="noreferrer"
                 className="flex items-center gap-1.5 px-2.5 py-1 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/40 text-[#25D366] text-xs font-bold rounded-lg transition-colors pointer-events-auto"
               >
@@ -78,7 +78,7 @@ export default function RadarActiveDispatch({ data, completing, onComplete, onCa
             </div>
           )}
           {data.truck.active_order_summary && (
-            <div className="flex items-start gap-1.5 text-indigo-300 text-xs mt-2 p-2 bg-indigo-500/10 rounded-lg">
+            <div className="flex items-start gap-1.5 text-primary-300 text-xs mt-2 p-2 bg-primary-500/10 rounded-lg">
               <Package className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <p>{data.truck.active_order_summary}</p>
             </div>
@@ -89,14 +89,14 @@ export default function RadarActiveDispatch({ data, completing, onComplete, onCa
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${data.truck.destination_latitude},${data.truck.destination_longitude}`}
             target="_blank" rel="noreferrer"
-            className="flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors border border-white/5 pointer-events-auto"
+            className="flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors border border-[var(--sf-border)] pointer-events-auto"
           >
             🗺️ Google Maps
           </a>
           <a
             href={`https://waze.com/ul?ll=${data.truck.destination_latitude},${data.truck.destination_longitude}&navigate=yes`}
             target="_blank" rel="noreferrer"
-            className="flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors border border-white/5 pointer-events-auto"
+            className="flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors border border-[var(--sf-border)] pointer-events-auto"
           >
             🚗 Waze
           </a>

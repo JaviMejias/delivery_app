@@ -3,11 +3,17 @@ class PriceListsController < ApplicationController
 
   def index
     lists = current_tenant.price_lists.order(id: :asc)
+    
+    if params[:search].present?
+      lists = lists.where("name ILIKE ?", "%#{params[:search]}%")
+    end
+
     pagy, records = pagy(lists, limit: 15)
 
     render inertia: "Catalog/PriceLists/Index", props: {
       priceLists: records,
-      pagination: extract_pagy(pagy)
+      pagination: extract_pagy(pagy),
+      currentSearch: params[:search]
     }
   end
 

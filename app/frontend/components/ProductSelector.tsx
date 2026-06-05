@@ -92,7 +92,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Buscar cilindro, galón, 15kg..." 
-            className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 outline-none transition-colors shadow-inner"
+            className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-primary-500 outline-none transition-colors shadow-inner"
           />
         </div>
         
@@ -113,7 +113,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={(e) => { e.preventDefault(); setSelectedBrandId(null); setIsFiltersOpen(false) }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm ${!selectedBrandId ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 border border-white/5 hover:bg-slate-700 hover:text-white'}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm ${!selectedBrandId ? 'bg-primary-500 text-white' : 'bg-slate-800 text-slate-400 border border-white/5 hover:bg-slate-700 hover:text-white'}`}
                 >
                   Todas
                 </button>
@@ -121,7 +121,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
                   <button
                     key={brand.id}
                     onClick={(e) => { e.preventDefault(); setSelectedBrandId(brand.id); setIsFiltersOpen(false) }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm ${selectedBrandId === brand.id ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 border border-white/5 hover:bg-slate-700 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm ${selectedBrandId === brand.id ? 'bg-primary-500 text-white' : 'bg-slate-800 text-slate-400 border border-white/5 hover:bg-slate-700 hover:text-white'}`}
                   >
                     {brand.logo_url && <img src={brand.logo_url} alt={brand.name} className="w-4 h-4 rounded-full bg-white object-contain" />}
                     {brand.name}
@@ -154,7 +154,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
               )}
               <h3 className="font-black text-white text-lg tracking-tight">{brand.name}</h3>
             </div>
-            <div className={`w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center transition-transform duration-300 ${expandedBrands[brand.id] ? 'rotate-180 bg-indigo-500/20 text-indigo-400' : 'text-slate-400'}`}>
+            <div className={`w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center transition-transform duration-300 ${expandedBrands[brand.id] ? 'rotate-180 bg-primary-500/20 text-primary-400' : 'text-slate-400'}`}>
               <ChevronDown className="w-5 h-5" />
             </div>
           </button>
@@ -208,7 +208,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
                         
                         <button
                           onClick={(e) => { e.preventDefault(); updateCart(product, brand.name, 1) }}
-                          className="w-9 h-9 rounded-lg bg-indigo-500 shadow-md shadow-indigo-500/20 text-white hover:bg-indigo-400 flex items-center justify-center active:scale-90 transition-all"
+                          className="w-9 h-9 rounded-lg bg-primary-500 shadow-md shadow-primary-500/20 text-white hover:bg-primary-400 flex items-center justify-center active:scale-90 transition-all"
                         >
                           <Plus className="w-5 h-5" />
                         </button>
@@ -225,9 +225,9 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
 
       {/* Cart Summary */}
       {cart.filter(i => i.quantity > 0).length > 0 && (
-        <div className="mt-8 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2">
+        <div className="mt-8 bg-primary-500/10 border border-primary-500/20 rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2">
           <h4 className="text-sm font-black text-white mb-3 flex items-center gap-2">
-            <Package className="w-4 h-4 text-indigo-400" /> Resumen de tu pedido
+            <Package className="w-4 h-4 text-primary-400" /> Resumen de tu pedido
           </h4>
           <div className="space-y-2">
             {cart.filter(i => i.quantity > 0).map(item => (

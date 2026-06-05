@@ -1,10 +1,11 @@
 import { Head, useForm, Link, router } from '@inertiajs/react'
-import Swal from 'sweetalert2'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import { CustomSelect } from '@/components/CustomSelect'
 import { CustomSwitch } from '@/components/CustomSwitch'
+import BackButton from '@/components/BackButton'
 import { Download } from 'lucide-react'
+import { confirmDelete } from '@/utils/alerts'
 
 interface Product {
   id: number
@@ -60,21 +61,11 @@ export default function TransferShow({ transfer, products }: Props) {
   }
 
   const confirmTransfer = () => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Ejecutar transferencia?',
       text: `Esto moverá físicamente los ítems de ${transfer.source_warehouse.name} hacia ${transfer.destination_warehouse.name}.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6366f1',
       confirmButtonText: 'Sí, mover stock',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-dark-card)',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.post(`/inventory/transfers/${transfer.id}/complete`)
-      }
+      onConfirm: () => router.post(`/inventory/transfers/${transfer.id}/complete`)
     })
   }
 
@@ -84,13 +75,11 @@ export default function TransferShow({ transfer, products }: Props) {
 
       <div className="space-y-6">
         {/* Encabezado */}
-        <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-[var(--sf-surface)] border border-[var(--sf-border)] border-l-4 border-l-indigo-500 mb-2">
+        <div className="glass-panel interactive-card p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-[var(--sf-surface)] border border-[var(--sf-border)] border-l-4 border-l-indigo-500 mb-2">
           
           {/* Volver + Título e Info (Izquierda) */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Link href="/inventory/transfers" className="px-3 py-2 text-sm font-semibold text-[var(--sf-text-muted)] bg-[var(--sf-bg)] hover:text-[var(--sf-text-main)] rounded-xl border border-[var(--sf-border)] transition-all flex items-center shrink-0">
-              ← Volver
-            </Link>
+            <BackButton href="/inventory/transfers" />
             
             <div>
               <h1 className="text-2xl font-heading font-bold text-[var(--sf-text-main)] flex items-center gap-3">
@@ -128,7 +117,7 @@ export default function TransferShow({ transfer, products }: Props) {
               href={`/inventory/transfers/${transfer.id}?format=pdf`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 text-sm font-semibold text-[var(--sf-text-muted)] bg-[var(--sf-bg)] hover:text-indigo-400 rounded-xl border border-[var(--sf-border)] hover:border-indigo-500/30 transition-all flex items-center gap-2"
+              className="px-4 py-2 text-sm font-semibold text-[var(--sf-text-muted)] bg-[var(--sf-bg)] hover:text-primary-400 rounded-xl border border-[var(--sf-border)] hover:border-primary-500/30 transition-all flex items-center gap-2"
               title="Descargar PDF"
             >
               <Download size={18} />
@@ -154,7 +143,7 @@ export default function TransferShow({ transfer, products }: Props) {
             <div className="lg:col-span-4">
               <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl p-6 sticky top-6">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl border border-indigo-500/30">
+                  <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 text-xl border border-primary-500/30">
                     +
                   </div>
                   <div>
@@ -204,7 +193,7 @@ export default function TransferShow({ transfer, products }: Props) {
                       min="1"
                       value={itemForm.data.quantity}
                       onChange={e => itemForm.setData('quantity', e.target.value)}
-                      className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 shadow-inner"
+                      className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 shadow-inner"
                       placeholder="Ej: 50"
                       required
                     />
@@ -213,7 +202,7 @@ export default function TransferShow({ transfer, products }: Props) {
                   <button
                     type="submit"
                     disabled={itemForm.processing}
-                    className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                    className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
                   >
                     <span>Agregar a la lista</span>
                     <span>→</span>
@@ -261,7 +250,7 @@ export default function TransferShow({ transfer, products }: Props) {
                               {item.item_type === 'Material' ? (
                                 <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded text-[10px] uppercase font-bold tracking-widest shrink-0">Vacío</span>
                               ) : (
-                                <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded text-[10px] uppercase font-bold tracking-widest shrink-0">Lleno</span>
+                                <span className="px-2 py-0.5 bg-primary-500/10 text-primary-400 border border-primary-500/20 rounded text-[10px] uppercase font-bold tracking-widest shrink-0">Lleno</span>
                               )}
                               {item.item?.name}
                             </div>

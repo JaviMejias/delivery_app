@@ -3,7 +3,7 @@ module ApplicationCable
     identified_by :current_user
 
     def connect
-      self.current_user = env['warden'].user
+      self.current_user = env["warden"].user
     end
   end
 end

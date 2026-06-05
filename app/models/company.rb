@@ -12,12 +12,13 @@ class Company < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :brands, dependent: :destroy
   has_many :trucks, dependent: :destroy
+  has_many :notifications, dependent: :destroy
   has_many :warehouses, dependent: :destroy
   has_many :materials, dependent: :destroy
   has_many :material_categories, dependent: :destroy
   has_many :company_phones, dependent: :destroy
   accepts_nested_attributes_for :company_phones, allow_destroy: true
-  
+
   validates :name, presence: true
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :slug, uniqueness: true, allow_nil: true

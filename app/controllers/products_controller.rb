@@ -2,7 +2,7 @@ class ProductsController < ApplicationController
   before_action :require_admin!
 
   def index
-    products = Product.includes(:material, :brand, product_prices: :price_list).ordered_by_name.search_by_name_or_sku(params[:search])
+    products = Product.includes(:material, :brand, product_prices: :price_list).recent.search_by_name_or_sku(params[:search])
     pagy, records = pagy(:offset, products, limit: 20)
 
     materials = Material.active.ordered_by_name
@@ -11,7 +11,7 @@ class ProductsController < ApplicationController
 
     products_json = records.as_json(include: [ :material, :brand, product_prices: { include: :price_list } ])
     products_json.each_with_index do |p_json, i|
-      p_json['image_url'] = url_for(records[i].image) if records[i].image.attached?
+      p_json["image_url"] = url_for(records[i].image) if records[i].image.attached?
     end
 
     render inertia: "Catalog/Products/Index", props: {
@@ -60,6 +60,6 @@ class ProductsController < ApplicationController
   end
 
   def product_params
-    params.require(:product).permit(:name, :sku, :material_id, :brand_id, :active, :accepts_vouchers, :available_in_app, :image)
+    params.require(:product).permit(:name, :sku, :material_id, :brand_id, :active, :accepts_vouchers, :available_in_app, :image, :critical_stock_threshold)
   end
 end

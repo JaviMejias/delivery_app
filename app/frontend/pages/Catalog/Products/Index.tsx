@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
-import Swal from 'sweetalert2'
+import { confirmDelete } from '@/utils/alerts'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import CurrencyInput from '@/components/CurrencyInput'
 import Pagination from '@/components/Pagination'
-import SearchBar from '@/components/SearchBar'
+import { TableFilters } from '@/components/TableFilters'
 import { CustomSelect } from '@/components/CustomSelect'
 import { ShoppingBag, Pencil, Trash2, Save, X } from 'lucide-react'
 import { CustomSwitch } from '@/components/CustomSwitch'
+import EmptyState from '@/components/EmptyState'
 
 interface Material {
   id: number
@@ -48,6 +49,7 @@ interface Product {
   active: boolean
   available_in_app: boolean
   accepts_vouchers: boolean
+  critical_stock_threshold: number
   material_id: number
   brand_id: number
   material?: Material
@@ -67,7 +69,17 @@ interface Props {
 
 export default function ProductsIndex({ products, materials, brands, priceLists, pagination, currentSearch }: Props) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [search, setSearch] = useState(currentSearch || '')
+  const [isFiltering, setIsFiltering] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const applyFilters = () => {
+    router.get('/catalog/products', { search }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
+  }
 
   const form = useForm({
     name: '',
@@ -77,6 +89,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
     active: true,
     available_in_app: true,
     accepts_vouchers: false,
+    critical_stock_threshold: 20,
     image: null as File | null,
     prices: {} as Record<number, string>
   })
@@ -88,15 +101,18 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
       const bra = brands.find(b => b.id.toString() === form.data.brand_id)
       
       if (mat && bra) {
-        // Name: "Galón 5 KG Gasco"
-        const measurePart = mat.measure ? ` ${mat.measure}` : ''
+        // Formatear medida para evitar '45.0' -> 45
+        const measureVal = mat.measure ? Number(mat.measure) : null
+
+        // Name: "Cilindro 15 KG Lipigas"
+        const measurePart = measureVal ? ` ${measureVal}` : ''
         const unitPart = mat.unit && mat.unit !== 'UN' ? ` ${mat.unit}` : ''
         const newName = `${mat.name}${measurePart}${unitPart} ${bra.name}`
         
-        // SKU: "GAL-5-GAS"
+        // SKU: "CIL-15-LIP"
         const matPrefix = mat.name.substring(0, 3).toUpperCase()
         const braPrefix = bra.name.substring(0, 3).toUpperCase()
-        const measureSku = mat.measure ? `-${mat.measure}` : ''
+        const measureSku = measureVal ? `-${measureVal}` : ''
         const newSku = `${matPrefix}${measureSku}-${braPrefix}`
 
         form.setData(data => ({
@@ -124,6 +140,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
       active: product.active,
       available_in_app: product.available_in_app,
       accepts_vouchers: product.accepts_vouchers,
+      critical_stock_threshold: product.critical_stock_threshold || 20,
       image: null,
       prices: pricesObj
     })
@@ -154,6 +171,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
         active: form.data.active,
         available_in_app: form.data.available_in_app,
         accepts_vouchers: form.data.accepts_vouchers,
+        critical_stock_threshold: form.data.critical_stock_threshold,
       },
       prices: form.data.prices
     } as any
@@ -183,27 +201,11 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
   }
 
   const deleteProduct = (id: number) => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Eliminar producto final?',
-      text: "No podrás revertir esto",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6366f1',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-dark-card)',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.delete(`/catalog/products/${id}`, {
-          onSuccess: () => {
-            if (editingProduct?.id === id) {
-              cancelEdit()
-            }
-          }
-        })
-      }
+      onConfirm: () => router.delete(`/catalog/products/${id}`, {
+        onSuccess: () => { if (editingProduct?.id === id) cancelEdit() }
+      })
     })
   }
 
@@ -222,11 +224,11 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
           <div className="lg:col-span-1" ref={formRef}>
-            <Card className={editingProduct ? 'ring-2 ring-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
+            <Card className={editingProduct ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${
                   editingProduct 
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
+                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-400' 
                     : 'bg-[var(--sf-surface)] border-[var(--sf-border)] text-[var(--sf-text-main)]'
                 }`}>
                   {editingProduct ? <Pencil className="w-5 h-5 shrink-0" /> : <ShoppingBag className="w-5 h-5 shrink-0 text-[var(--sf-text-muted)]" />}
@@ -295,6 +297,18 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1">Umbral de Stock Crítico</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.data.critical_stock_threshold}
+                      onChange={e => form.setData('critical_stock_threshold', parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-2 bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium"
+                      required
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1">Imagen del Producto (Opcional)</label>
                     {editingProduct?.image_url && !form.data.image && (
                       <div className="mb-2">
@@ -305,7 +319,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                       type="file"
                       accept="image/*"
                       onChange={e => form.setData('image', e.target.files ? e.target.files[0] : null)}
-                      className="w-full text-sm text-[var(--sf-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20"
+                      className="w-full text-sm text-[var(--sf-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-500/10 file:text-primary-400 hover:file:bg-primary-500/20"
                     />
                   </div>
 
@@ -359,7 +373,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                     <button
                       type="submit"
                       disabled={form.processing}
-                      className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       {editingProduct ? 'Actualizar Producto' : 'Guardar Producto'}
@@ -381,11 +395,17 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
           </div>
 
           {/* Lista */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+              <TableFilters.Search
+                value={search}
+                onChange={setSearch}
+                onSearch={applyFilters}
+                placeholder="Buscar por SKU o Nombre..."
+                className="w-full sm:w-96"
+              />
+            </TableFilters>
             <Card className="overflow-hidden flex flex-col h-full">
-              <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]">
-                <SearchBar routeName="/catalog/products" currentSearch={currentSearch || ""} placeholder="Buscar por SKU o Nombre..." />
-              </div>
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-[var(--sf-bg)] text-[var(--sf-text-muted)] border-b border-[var(--sf-border)]">
@@ -399,13 +419,17 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                   <tbody className="divide-y divide-[var(--sf-dark-border)]">
                     {products.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-6 py-12 text-center text-[var(--sf-text-muted)]">
-                          No hay productos registrados.
+                        <td colSpan={4} className="p-0 border-b-0">
+                          <EmptyState 
+                            title={currentSearch ? "Sin resultados" : "Sin productos"} 
+                            description={currentSearch ? `No hay coincidencias para "${currentSearch}".` : "No hay productos finales registrados en el sistema."}
+                            type={currentSearch ? "search" : "box"}
+                          />
                         </td>
                       </tr>
                     ) : (
                       products.map((p) => (
-                        <tr key={p.id} className={`${editingProduct?.id === p.id ? 'bg-indigo-500/5' : 'hover:bg-[var(--sf-bg)]/50'} transition-colors`}>
+                        <tr key={p.id} className={`${editingProduct?.id === p.id ? 'bg-primary-500/5' : 'hover:bg-[var(--sf-bg)]/50'} transition-colors`}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {p.image_url ? (
@@ -440,7 +464,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                               )}
                               
                               {p.available_in_app ? (
-                                <span className="px-2 py-1 rounded text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">App: Visible</span>
+                                <span className="px-2 py-1 rounded text-xs font-bold bg-primary-500/10 text-primary-400 border border-primary-500/20">App: Visible</span>
                               ) : (
                                 <span className="px-2 py-1 rounded text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">App: Oculto</span>
                               )}
@@ -467,7 +491,7 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                                       )
                                     })}
                                     {p.product_prices.length > 2 && (
-                                      <span className="text-[10px] text-indigo-400 font-bold mt-1 w-max">
+                                      <span className="text-[10px] text-primary-400 font-bold mt-1 w-max">
                                         +{p.product_prices.length - 2} listas más... (Hover)
                                       </span>
                                     )}
@@ -494,12 +518,12 @@ export default function ProductsIndex({ products, materials, brands, priceLists,
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right align-top">
-                            <div className="flex items-center justify-end gap-3 mt-1">
-                              <button onClick={() => editProduct(p)} className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Pencil className="w-3.5 h-3.5" /> Editar
+                            <div className="flex items-center justify-end gap-1 mt-1">
+                              <button onClick={() => editProduct(p)} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors" title="Editar">
+                                <Pencil size={18} />
                               </button>
-                              <button onClick={() => deleteProduct(p.id)} className="text-red-400 hover:text-red-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                              <button onClick={() => deleteProduct(p.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar">
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </td>

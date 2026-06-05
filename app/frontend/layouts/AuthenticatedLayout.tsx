@@ -8,7 +8,8 @@ interface Props {
   hideHeader?: boolean
 }
 
-import { Sparkles, Grid, Banknote, ShoppingCart, Package, Truck, Monitor, Sun, Moon, Building2, Radar, Menu } from 'lucide-react'
+import { Sparkles, Grid, Banknote, ShoppingCart, Package, Truck, Monitor, Sun, Moon, Building2, Radar, Menu, Palette, Check, Bell, Trash2 } from 'lucide-react'
+import { CustomSelect } from '@/components/CustomSelect'
 
 const navigationCategories = [
   {
@@ -106,13 +107,14 @@ const Toast = Swal.mixin({
 
 export default function AuthenticatedLayout({ children, hideHeader = false }: Props) {
   const page = usePage()
-  const { auth, flash } = page.props as unknown as {
+  const { auth, flash, app_name } = page.props as unknown as {
     auth: {
       user: User,
       current_company?: { id: number, name: string, rut: string },
       available_companies?: { id: number, name: string }[]
     };
-    flash: { notice?: string; alert?: string }
+    flash: { notice?: string; alert?: string };
+    app_name: string;
   }
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const currentPath = window.location.pathname
@@ -173,6 +175,116 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
 
   const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>('system')
   const isManualThemeChange = useRef(false)
+  const [auraPreference, setAuraPreference] = useState<string>('indigo')
+  const [showAuraMenu, setShowAuraMenu] = useState(false)
+  const auraMenuRef = useRef<HTMLDivElement>(null)
+
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notifMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications', { headers: { 'Accept': 'application/json' } })
+        if (res.ok) {
+          const data = await res.json()
+          setNotifications(data.notifications)
+          setUnreadCount(data.unread_count)
+        }
+      } catch (e) {
+        console.error("Error fetching notifications", e)
+      }
+    }
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const markAllRead = async () => {
+    try {
+      const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content
+      await fetch('/api/notifications/mark_all_read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || ''
+        }
+      })
+      setUnreadCount(0)
+      setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })))
+    } catch (e) { }
+  }
+
+  const markAsRead = async (id: number) => {
+    try {
+      const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content
+      await fetch(`/api/notifications/${id}/mark_as_read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || ''
+        }
+      })
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (e) { }
+  }
+
+  const deleteNotification = async (id: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content
+      await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || ''
+        }
+      })
+      const isUnread = !notifications.find(n => n.id === id)?.read_at
+      if (isUnread) setUnreadCount(prev => Math.max(0, prev - 1))
+      setNotifications(prev => prev.filter(n => n.id !== id))
+    } catch (e) { }
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (auraMenuRef.current && !auraMenuRef.current.contains(event.target as Node)) {
+        setShowAuraMenu(false)
+      }
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const AURAS = [
+    { id: 'indigo', name: 'Original (Índigo)', color: 'bg-[#6366f1]' },
+    { id: 'red', name: 'Rojo', color: 'bg-red-500' },
+    { id: 'blue', name: 'Azul', color: 'bg-blue-500' },
+    { id: 'amber', name: 'Amarillo', color: 'bg-amber-500' },
+    { id: 'orange', name: 'Naranjo', color: 'bg-orange-500' }
+  ]
+
+  useEffect(() => {
+    const savedAura = localStorage.getItem('sf-aura') || 'indigo'
+    setAuraPreference(savedAura)
+    document.documentElement.classList.remove('aura-indigo', 'aura-red', 'aura-blue', 'aura-amber', 'aura-orange')
+    document.documentElement.classList.add(`aura-${savedAura}`)
+  }, [])
+
+  const changeAura = (auraId: string) => {
+    localStorage.setItem('sf-aura', auraId)
+    setAuraPreference(auraId)
+    document.documentElement.classList.remove('aura-indigo', 'aura-red', 'aura-blue', 'aura-amber', 'aura-orange')
+    document.documentElement.classList.add(`aura-${auraId}`)
+    setShowAuraMenu(false)
+  }
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('sf-theme') as 'light' | 'dark' | 'system'
@@ -233,18 +345,21 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
     })
   }, [])
 
-  return (
-    <div className="min-h-screen bg-[var(--sf-bg)] flex text-[var(--sf-text-main)] selection:bg-indigo-500/30">
+  const getInitials = (name: string) => {
+    if (!name) return 'SF'
+    const words = name.trim().split(/\s+/)
+    if (words.length === 1) return name.substring(0, 2).toUpperCase()
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
 
-      {/* Mobile sidebar overlay */}
+  return (
+    <div className="min-h-screen bg-[var(--sf-bg)] flex text-[var(--sf-text-main)] selection:bg-primary-500/30">
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Sidebar */}
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-72 glass border-r border-[var(--sf-glass-border)]
@@ -253,20 +368,16 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Logo Area */}
         <div className="h-20 flex items-center gap-4 px-6 border-b border-[var(--sf-glass-border)] shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span className="text-[var(--sf-text-main)] font-heading font-bold text-lg tracking-wider">SF</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-primary-500/20">
+            <span className="text-[var(--sf-text-main)] font-heading font-bold text-lg tracking-wider">{getInitials(app_name)}</span>
           </div>
           <div>
-            <h1 className="font-heading font-bold text-xl bg-gradient-to-r from-indigo-500 to-indigo-400 bg-clip-text text-transparent tracking-tight">
-              StockFlow
+            <h1 className="font-heading font-bold text-xl bg-gradient-to-r from-primary-500 to-primary-400 bg-clip-text text-transparent tracking-tight">
+              {app_name}
             </h1>
-            <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">Enterprise</p>
           </div>
         </div>
-
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 scrollbar-hide">
           {filteredCategories.map((cat, index) => {
             const isActive = activeCategory.title === cat.title
@@ -285,7 +396,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
                 )}
                 <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(99,102,241,0.3)]' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}>
                   {cat.icon}
@@ -295,11 +406,26 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
             )
           })}
         </nav>
+        <div className="p-4 shrink-0 flex flex-col gap-3">
+          {auth.user.role === 'admin' && auth.available_companies && auth.available_companies.length > 0 && (
+            <div className="lg:hidden w-full relative z-[60]">
+              <CustomSelect
+                value={auth.current_company ? { value: auth.current_company.id.toString(), label: auth.current_company.name } : null}
+                onChange={(val: any) => {
+                  const companyId = val?.value
+                  if (companyId && parseInt(companyId) !== auth.current_company?.id) {
+                    router.post(`/companies/${companyId}/switch`)
+                  }
+                }}
+                options={auth.available_companies.map((c: any) => ({ value: c.id.toString(), label: c.name }))}
+                placeholder="Empresa..."
+                menuPlacement="top"
+              />
+            </div>
+          )}
 
-        {/* User Profile Footer */}
-        <div className="p-4 shrink-0">
           <div className="glass-panel rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
             <div className="relative z-10 w-10 h-10 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-glass-border)] flex items-center justify-center text-[var(--sf-text-main)] text-sm font-bold shadow-inner shrink-0">
               {auth.user.first_name?.[0]}{auth.user.last_name?.[0]}
@@ -328,15 +454,12 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Top Header */}
         {!hideHeader && (
-          <header className="h-20 glass border-b border-[var(--sf-glass-border)] flex items-center px-6 shrink-0 relative z-10 justify-between">
+          <header className="h-20 glass border-b border-[var(--sf-glass-border)] border-t-4 border-t-primary-500 bg-gradient-to-r from-primary-500/5 to-transparent flex items-center px-6 shrink-0 relative z-30 justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -352,7 +475,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
                   Bienvenido de nuevo, <span className="text-[var(--sf-text-main)] font-bold">{auth.user.first_name}</span>
                 </h2>
                 {auth.current_company && (
-                  <p className="text-xs text-indigo-400 font-medium tracking-wide flex items-center gap-1 mt-0.5">
+                  <p className="text-xs text-primary-400 font-medium tracking-wide flex items-center gap-1 mt-0.5">
                     <Building2 className="w-3.5 h-3.5" />
                     {auth.current_company.name} {auth.current_company.rut ? `(${auth.current_company.rut})` : ''}
                   </p>
@@ -362,28 +485,109 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
 
             <div className="flex items-center gap-4">
               {auth.user.role === 'admin' && auth.available_companies && auth.available_companies.length > 0 && (
-                <div className="relative group">
-                  <select
-                    className="appearance-none bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm font-medium rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm hover:border-indigo-500/30 transition-colors"
-                    value={auth.current_company?.id || ''}
-                    onChange={(e) => {
-                      const companyId = e.target.value
+                <div className="hidden lg:block w-[220px] relative z-[60]">
+                  <CustomSelect
+                    value={auth.current_company ? { value: auth.current_company.id.toString(), label: auth.current_company.name } : null}
+                    onChange={(val: any) => {
+                      const companyId = val?.value
                       if (companyId && parseInt(companyId) !== auth.current_company?.id) {
                         router.post(`/companies/${companyId}/switch`)
                       }
                     }}
-                  >
-                    {auth.available_companies.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-[var(--sf-text-muted)] group-hover:text-indigo-400 transition-colors">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                    options={auth.available_companies.map((c: any) => ({ value: c.id.toString(), label: c.name }))}
+                    placeholder="Empresa..."
+                  />
                 </div>
               )}
+
+              <div className="relative" ref={notifMenuRef}>
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="w-10 h-10 rounded-full glass flex items-center justify-center text-[var(--sf-text-muted)] hover:text-primary-500 transition-all hover:scale-110 relative"
+                  title="Notificaciones"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse ring-2 ring-[var(--sf-glass-bg)]" />
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="fixed left-4 right-4 top-20 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-2 sm:w-80 glass-panel border border-[var(--sf-glass-border)] rounded-2xl shadow-2xl z-[100] py-2 overflow-hidden animate-slide-up">
+                    <div className="px-4 py-2 border-b border-[var(--sf-glass-border)] flex items-center justify-between">
+                      <p className="text-xs font-bold text-[var(--sf-text-muted)] uppercase tracking-wider">Notificaciones</p>
+                      {unreadCount > 0 && (
+                        <button onClick={markAllRead} className="text-[10px] font-bold text-primary-500 hover:text-primary-400">
+                          Marcar todo leído
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-sm text-[var(--sf-text-muted)]">
+                          No tienes notificaciones
+                        </div>
+                      ) : (
+                        notifications.map(notif => (
+                          <div key={notif.id} className={`group relative block px-4 py-3 border-b border-[var(--sf-glass-border)]/50 last:border-0 hover:bg-[var(--sf-surface-hover)] transition-colors ${!notif.read_at ? 'bg-primary-500/5' : ''}`}>
+                            <Link
+                              href={notif.action_url || '#'}
+                              onClick={() => { if (!notif.read_at) markAsRead(notif.id) }}
+                              className="flex items-start gap-3 pr-8"
+                            >
+                              <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${notif.notification_type === 'danger' ? 'bg-rose-500' : notif.notification_type === 'warning' ? 'bg-amber-500' : 'bg-primary-500'}`} />
+                              <div>
+                                <p className={`text-sm ${!notif.read_at ? 'font-bold text-[var(--sf-text-main)]' : 'font-medium text-[var(--sf-text-muted)]'}`}>
+                                  {notif.title}
+                                </p>
+                                <p className="text-xs text-[var(--sf-text-muted)] mt-0.5 line-clamp-2">{notif.message}</p>
+                              </div>
+                            </Link>
+                            <button
+                              onClick={(e) => deleteNotification(notif.id, e)}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-lg text-[var(--sf-text-muted)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                              title="Eliminar Notificación"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative" ref={auraMenuRef}>
+                <button
+                  onClick={() => setShowAuraMenu(!showAuraMenu)}
+                  className="w-10 h-10 rounded-full glass flex items-center justify-center text-[var(--sf-text-muted)] hover:text-primary-500 transition-all hover:scale-110"
+                  title="Cambiar Color (Aura)"
+                >
+                  <Palette className="w-5 h-5" />
+                </button>
+
+                {showAuraMenu && (
+                  <div className="absolute right-0 mt-2 w-48 glass-panel border border-[var(--sf-glass-border)] rounded-xl shadow-2xl z-50 py-2 overflow-hidden animate-slide-up">
+                    <div className="px-3 pb-2 mb-2 border-b border-[var(--sf-glass-border)]">
+                      <p className="text-xs font-bold text-[var(--sf-text-muted)] uppercase tracking-wider">Color de Marca</p>
+                    </div>
+                    {AURAS.map(aura => (
+                      <button
+                        key={aura.id}
+                        onClick={() => changeAura(aura.id)}
+                        className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between transition-colors ${auraPreference === aura.id ? 'bg-primary-500/10 text-primary-500' : 'text-[var(--sf-text-main)] hover:bg-[var(--sf-surface-hover)]'}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-3 h-3 rounded-full shadow-inner ${aura.color}`} />
+                          {aura.name}
+                        </div>
+                        {auraPreference === aura.id && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={cycleTheme}
@@ -396,7 +600,6 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
           </header>
         )}
 
-        {/* Sub-navigation Tabs */}
         {!hideHeader && activeCategory.items.length > 1 && (
           <div className="bg-[var(--sf-bg)]/80 backdrop-blur-md border-b border-[var(--sf-glass-border)] shrink-0 relative z-10">
             <div className="px-6 lg:px-8">
@@ -410,7 +613,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
                       className={`
                         whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors
                         ${isActive
-                          ? 'border-indigo-500 text-indigo-400'
+                          ? 'border-primary-500 text-primary-400'
                           : 'border-transparent text-[var(--sf-text-muted)] hover:border-[var(--sf-glass-border)] hover:text-[var(--sf-text-main)]'
                         }
                       `}
@@ -424,9 +627,8 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
           </div>
         )}
 
-        {/* Page content */}
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto relative z-0 ${hideHeader ? 'p-0' : 'p-4 lg:p-8'}`}>
-          <div className={`mx-auto w-full animate-fade-in ${hideHeader ? 'h-full' : ''}`}>
+        <main key={usePage().url} className={`flex-1 overflow-x-hidden overflow-y-auto relative z-0 ${hideHeader ? 'p-0' : 'p-4 lg:p-8'}`}>
+          <div className={`mx-auto w-full animate-slide-up ${hideHeader ? 'h-full' : ''}`}>
             {children}
           </div>
         </main>

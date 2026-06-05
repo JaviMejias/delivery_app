@@ -8,7 +8,7 @@ class StockTransferItemsController < ApplicationController
       return
     end
 
-    if params[:is_empty].to_s == 'true'
+    if params[:is_empty].to_s == "true"
       product = Product.find(params[:product_id])
       item = product.material
     else

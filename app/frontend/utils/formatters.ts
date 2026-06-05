@@ -55,3 +55,35 @@ export function formatPhone(phone: string): string {
   
   return clean;
 }
+
+export function formatMoney(amount: number | string): string {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(amount));
+}
+
+export const formatCLP = formatMoney;
+
+export function formatDate(dateStr: string): string {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('es-CL');
+}
+
+export function formatPlate(value: string): string {
+  if (!value) return '';
+  const upper = value.toUpperCase();
+  const clean = upper.replace(/[^A-Z0-9]/g, '');
+  
+  if (clean.length === 6) {
+    if (/^[A-Z]{4}[0-9]{2}$/.test(clean)) {
+      return `${clean.slice(0, 2)}-${clean.slice(2, 4)}-${clean.slice(4, 6)}`;
+    }
+    if (/^[A-Z]{2}[0-9]{4}$/.test(clean)) {
+      return `${clean.slice(0, 2)}-${clean.slice(2, 6)}`;
+    }
+  }
+
+  if (clean.length > 2 && clean.length <= 4) {
+    return `${clean.slice(0, 2)}-${clean.slice(2)}`;
+  }
+  
+  return upper;
+}

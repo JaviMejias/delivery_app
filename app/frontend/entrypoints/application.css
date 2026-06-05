@@ -1,14 +1,99 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;900&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-primary-50: var(--sf-primary-50);
+  --color-primary-100: var(--sf-primary-100);
+  --color-primary-200: var(--sf-primary-200);
+  --color-primary-300: var(--sf-primary-300);
+  --color-primary-400: var(--sf-primary-400);
+  --color-primary-500: var(--sf-primary-500);
+  --color-primary-600: var(--sf-primary-600);
+  --color-primary-700: var(--sf-primary-700);
+  --color-primary-800: var(--sf-primary-800);
+  --color-primary-900: var(--sf-primary-900);
+  --color-primary-950: var(--sf-primary-950);
+}
+
+:root {
+  --sf-primary-50: var(--color-indigo-50);
+  --sf-primary-100: var(--color-indigo-100);
+  --sf-primary-200: var(--color-indigo-200);
+  --sf-primary-300: var(--color-indigo-300);
+  --sf-primary-400: var(--color-indigo-400);
+  --sf-primary-500: var(--color-indigo-500);
+  --sf-primary-600: var(--color-indigo-600);
+  --sf-primary-700: var(--color-indigo-700);
+  --sf-primary-800: var(--color-indigo-800);
+  --sf-primary-900: var(--color-indigo-900);
+  --sf-primary-950: var(--color-indigo-950);
+}
+
+.aura-red {
+  --sf-primary-50: var(--color-red-50);
+  --sf-primary-100: var(--color-red-100);
+  --sf-primary-200: var(--color-red-200);
+  --sf-primary-300: var(--color-red-300);
+  --sf-primary-400: var(--color-red-400);
+  --sf-primary-500: var(--color-red-500);
+  --sf-primary-600: var(--color-red-600);
+  --sf-primary-700: var(--color-red-700);
+  --sf-primary-800: var(--color-red-800);
+  --sf-primary-900: var(--color-red-900);
+  --sf-primary-950: var(--color-red-950);
+}
+
+.aura-blue {
+  --sf-primary-50: var(--color-blue-50);
+  --sf-primary-100: var(--color-blue-100);
+  --sf-primary-200: var(--color-blue-200);
+  --sf-primary-300: var(--color-blue-300);
+  --sf-primary-400: var(--color-blue-400);
+  --sf-primary-500: var(--color-blue-500);
+  --sf-primary-600: var(--color-blue-600);
+  --sf-primary-700: var(--color-blue-700);
+  --sf-primary-800: var(--color-blue-800);
+  --sf-primary-900: var(--color-blue-900);
+  --sf-primary-950: var(--color-blue-950);
+}
+
+.aura-amber {
+  --sf-primary-50: var(--color-amber-50);
+  --sf-primary-100: var(--color-amber-100);
+  --sf-primary-200: var(--color-amber-200);
+  --sf-primary-300: var(--color-amber-300);
+  --sf-primary-400: var(--color-amber-400);
+  --sf-primary-500: var(--color-amber-500);
+  --sf-primary-600: var(--color-amber-600);
+  --sf-primary-700: var(--color-amber-700);
+  --sf-primary-800: var(--color-amber-800);
+  --sf-primary-900: var(--color-amber-900);
+  --sf-primary-950: var(--color-amber-950);
+}
+
+.aura-orange {
+  --sf-primary-50: var(--color-orange-50);
+  --sf-primary-100: var(--color-orange-100);
+  --sf-primary-200: var(--color-orange-200);
+  --sf-primary-300: var(--color-orange-300);
+  --sf-primary-400: var(--color-orange-400);
+  --sf-primary-500: var(--color-orange-500);
+  --sf-primary-600: var(--color-orange-600);
+  --sf-primary-700: var(--color-orange-700);
+  --sf-primary-800: var(--color-orange-800);
+  --sf-primary-900: var(--color-orange-900);
+  --sf-primary-950: var(--color-orange-950);
+}
+
+
 /* ========================================
    StockFlow Premium Design System
    ======================================== */
 
 :root {
   /* Core Colors */
-  --sf-primary: #6366f1;
-  --sf-primary-hover: #4f46e5;
+  --sf-primary: var(--sf-primary-500);
+  --sf-primary-hover: var(--sf-primary-600);
   --sf-secondary: #0ea5e9;
   --sf-success: #10b981;
   --sf-warning: #f59e0b;
@@ -26,12 +111,12 @@
   --sf-text-muted: #94a3b8;
 
   /* Glassmorphism Dark */
-  --sf-glass-bg: rgba(24, 24, 27, 0.65);
-  --sf-glass-panel-bg1: rgba(30, 30, 35, 0.7);
-  --sf-glass-panel-bg2: rgba(20, 20, 25, 0.8);
-  --sf-glass-border: rgba(255, 255, 255, 0.05);
-  --sf-glass-panel-border: rgba(255, 255, 255, 0.08);
-  --sf-glass-shadow: rgba(0, 0, 0, 0.3);
+  --sf-glass-bg: rgba(24, 24, 27, 0.85);
+  --sf-glass-panel-bg1: rgba(30, 30, 35, 0.90);
+  --sf-glass-panel-bg2: rgba(20, 20, 25, 0.95);
+  --sf-glass-border: rgba(255, 255, 255, 0.08);
+  --sf-glass-panel-border: rgba(255, 255, 255, 0.12);
+  --sf-glass-shadow: rgba(0, 0, 0, 0.4);
 
   /* UI Tokens */
   --sf-radius: 1rem;
@@ -57,12 +142,12 @@
   --sf-text-muted: #64748b;
 
   /* Glassmorphism Light */
-  --sf-glass-bg: rgba(255, 255, 255, 0.75);
-  --sf-glass-panel-bg1: rgba(255, 255, 255, 0.85);
-  --sf-glass-panel-bg2: rgba(248, 250, 252, 0.95);
-  --sf-glass-border: rgba(0, 0, 0, 0.05);
-  --sf-glass-panel-border: rgba(0, 0, 0, 0.08);
-  --sf-glass-shadow: rgba(0, 0, 0, 0.05);
+  --sf-glass-bg: rgba(255, 255, 255, 0.90);
+  --sf-glass-panel-bg1: rgba(255, 255, 255, 0.95);
+  --sf-glass-panel-bg2: rgba(248, 250, 252, 0.98);
+  --sf-glass-border: rgba(0, 0, 0, 0.08);
+  --sf-glass-panel-border: rgba(0, 0, 0, 0.10);
+  --sf-glass-shadow: rgba(0, 0, 0, 0.1);
 
   --sf-dark: var(--sf-bg);
   --sf-dark-card: var(--sf-surface);
@@ -78,7 +163,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.05), transparent 25%),
+    radial-gradient(circle at 15% 50%, color-mix(in srgb, var(--sf-primary-500) 5%, transparent), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
   background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -101,6 +186,18 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   backdrop-filter: blur(20px);
   border: 1px solid var(--sf-glass-panel-border);
   box-shadow: 0 8px 32px 0 var(--sf-glass-shadow);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interactive-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interactive-card:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 15px 45px -5px color-mix(in srgb, var(--sf-primary-500) 15%, var(--sf-glass-shadow));
+  border-color: color-mix(in srgb, var(--sf-primary-500) 40%, var(--sf-glass-panel-border));
+  z-index: 10;
 }
 
 /* Scrollbar Styling */
@@ -134,8 +231,8 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.1); }
-  50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.3); }
+  0%, 100% { box-shadow: 0 0 15px color-mix(in srgb, var(--sf-primary-500) 10%, transparent); }
+  50% { box-shadow: 0 0 25px color-mix(in srgb, var(--sf-primary-500) 30%, transparent); }
 }
 
 .animate-slide-up {
@@ -198,4 +295,11 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 .flatpickr-time {
   border-top: 1px solid var(--sf-border) !important;
+}
+
+/* ========================================
+   Map Dark Mode Filter
+   ======================================== */
+.map-dark-mode {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }

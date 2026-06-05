@@ -13,10 +13,10 @@ class Warehouse < ApplicationRecord
   enum :card_surcharge_type, { fixed: 0, percentage: 1 }, prefix: true
 
   scope :active_warehouses, -> { where(active: true) }
-  scope :stationary, -> { 
+  scope :stationary, -> {
     where.not(id: Truck.select(:warehouse_id))
          .where("name NOT ILIKE ?", "Camión%")
-         .where("name NOT ILIKE ?", "Móvil%") 
+         .where("name NOT ILIKE ?", "Móvil%")
   }
-  scope :search_by_name, ->(query) { where('name ILIKE ?', "%#{query}%") if query.present? }
+  scope :search_by_name, ->(query) { where("name ILIKE ?", "%#{query}%") if query.present? }
 end

@@ -28,7 +28,7 @@ class LocalSaleItem < ApplicationRecord
                           .where(voucher_code: voucher_code)
                           .where.not(id: id)
                           .exists?
-    
+
     if exists
       errors.add(:voucher_code, "ya ha sido utilizado para esta marca (#{product.brand.name})")
     end

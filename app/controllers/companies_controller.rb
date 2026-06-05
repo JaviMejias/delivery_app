@@ -3,6 +3,11 @@ class CompaniesController < ApplicationController
 
   def index
     companies = Company.includes(:company_phones).order(id: :asc)
+    
+    if params[:search].present?
+      companies = companies.where("name ILIKE ? OR rut ILIKE ?", "%#{params[:search]}%", "%#{params[:search]}%")
+    end
+
     pagy, records = pagy(companies, limit: 15)
 
     companies_json = records.map do |c|
@@ -13,7 +18,8 @@ class CompaniesController < ApplicationController
 
     render inertia: "Companies/Index", props: {
       companies: companies_json,
-      pagination: extract_pagy(pagy)
+      pagination: extract_pagy(pagy),
+      currentSearch: params[:search]
     }
   end
 
@@ -50,10 +56,10 @@ class CompaniesController < ApplicationController
   def company_params
     p = params[:company].present? ? params.require(:company) : params
     p.permit(
-      :name, :rut, :address, :email, :phone, 
+      :name, :rut, :address, :email, :phone,
       :business_activity, :website, :legal_representative, :active, :logo,
       :enable_public_orders,
-      company_phones_attributes: [:id, :number, :label, :_destroy]
+      company_phones_attributes: [ :id, :number, :label, :_destroy ]
     )
   end
 end

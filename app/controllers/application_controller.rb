@@ -34,7 +34,8 @@ class ApplicationController < ActionController::Base
       flash: {
         notice: flash[:notice],
         alert: flash[:alert]
-      }
+      },
+      app_name: ENV.fetch('APP_NAME', 'StockFlow')
     }
   end
 
@@ -48,7 +49,7 @@ class ApplicationController < ActionController::Base
       # Wait, how do we know the company slug?
       # We could get it from the params if it was present, or we can look at their last order,
       # or just redirect back if request.referer is present.
-      
+
       stored_location_for(resource) || public_order_new_path(company_slug: params[:company_slug]) rescue root_path
     else
       dashboard_path
@@ -57,25 +58,25 @@ class ApplicationController < ActionController::Base
 
   def require_admin!
     unless current_user.admin?
-      redirect_to dashboard_path, alert: 'Acceso denegado: Se requieren permisos de Administrador.'
+      redirect_to dashboard_path, alert: "Acceso denegado: Se requieren permisos de Administrador."
     end
   end
 
   def require_inventory_access!
     unless current_user.admin? || current_user.warehouse_keeper?
-      redirect_to dashboard_path, alert: 'Acceso denegado: Área exclusiva de Bodega.'
+      redirect_to dashboard_path, alert: "Acceso denegado: Área exclusiva de Bodega."
     end
   end
 
   def require_sales_access!
     unless current_user.admin? || current_user.cashier?
-      redirect_to dashboard_path, alert: 'Acceso denegado: Área exclusiva de Ventas.'
+      redirect_to dashboard_path, alert: "Acceso denegado: Área exclusiva de Ventas."
     end
   end
 
   def require_route_access!
     unless current_user.admin? || current_user.cashier? || current_user.driver?
-      redirect_to dashboard_path, alert: 'Acceso denegado: Área exclusiva de Ruta.'
+      redirect_to dashboard_path, alert: "Acceso denegado: Área exclusiva de Ruta."
     end
   end
 

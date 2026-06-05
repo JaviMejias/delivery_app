@@ -1,8 +1,8 @@
 class Driver::RadarController < ApplicationController
   before_action :require_driver_access!
-  skip_before_action :verify_authenticity_token, only: [:accept_order, :complete_order, :cancel_order, :update_location]
+  skip_before_action :verify_authenticity_token, only: [ :accept_order, :complete_order, :cancel_order, :update_location ]
   def index
-    render inertia: 'Driver/Radar'
+    render inertia: "Driver/Radar"
   end
   def orders
     truck = current_truck
@@ -29,7 +29,7 @@ class Driver::RadarController < ApplicationController
         inventory: current_truck_inventory
       }
     else
-      { id: nil, plate_number: 'Sin camión', latitude: nil, longitude: nil, has_destination: false, destination_latitude: nil, destination_longitude: nil, destination_client_name: nil, destination_address: nil, route_points: nil, active_order_id: nil, active_order_summary: nil, active_order_phone: nil, inventory: [] }
+      { id: nil, plate_number: "Sin camión", latitude: nil, longitude: nil, has_destination: false, destination_latitude: nil, destination_longitude: nil, destination_client_name: nil, destination_address: nil, route_points: nil, active_order_id: nil, active_order_summary: nil, active_order_phone: nil, inventory: [] }
     end
     pending_orders = CustomerOrder.pending_for_company(current_tenant.id)
       .where("truck_id IS NULL OR truck_id = ?", truck&.id)
@@ -61,19 +61,19 @@ class Driver::RadarController < ApplicationController
     Driver::AcceptOrderService.call(order: order, truck: truck, current_tenant: current_tenant)
     render json: { success: true, order_token: order.order_token }
   rescue ActiveRecord::StaleObjectError
-    render json: { error: 'Alguien más fue más rápido. Este pedido ya fue tomado por otro repartidor.' }, status: :conflict
+    render json: { error: "Alguien más fue más rápido. Este pedido ya fue tomado por otro repartidor." }, status: :conflict
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Pedido no encontrado o ya fue tomado por otro camión' }, status: :not_found
+    render json: { error: "Pedido no encontrado o ya fue tomado por otro camión" }, status: :not_found
   rescue => e
     render json: { success: false, error: e.message }, status: :unprocessable_entity
   end
   def update_location
     truck = current_truck
-    return render json: { error: 'Sin camión asignado' }, status: :unprocessable_entity unless truck
+    return render json: { error: "Sin camión asignado" }, status: :unprocessable_entity unless truck
 
     lat = params[:latitude].to_f
     lng = params[:longitude].to_f
-    return render json: { error: 'Coordenadas inválidas' }, status: :bad_request if lat == 0 && lng == 0
+    return render json: { error: "Coordenadas inválidas" }, status: :bad_request if lat == 0 && lng == 0
 
     truck.update!(latitude: lat, longitude: lng, gps_last_updated_at: Time.current)
     active_order = CustomerOrder.active_for_truck(truck).first
@@ -103,15 +103,15 @@ class Driver::RadarController < ApplicationController
   end
   def complete_order
     truck = current_truck
-    return render json: { error: 'No tienes un camión asignado' }, status: :unprocessable_entity unless truck
+    return render json: { error: "No tienes un camión asignado" }, status: :unprocessable_entity unless truck
 
     order = CustomerOrder.where(truck: truck, company_id: current_tenant.id)
                          .where(status: %i[accepted in_transit nearby arrived])
                          .find(params[:order_id])
-    
+
     ActiveRecord::Base.transaction do
       if params[:reason].present?
-        order.notes = [order.notes, "Entrega Forzada por #{truck.plate_number}: #{params[:reason]}"].reject(&:blank?).join(" | ")
+        order.notes = [ order.notes, "Entrega Forzada por #{truck.plate_number}: #{params[:reason]}" ].reject(&:blank?).join(" | ")
       end
       order.update!(status: :completed)
       truck.update!(
@@ -126,49 +126,57 @@ class Driver::RadarController < ApplicationController
     end
 
     ActionCable.server.broadcast("orders_#{current_tenant.id}", {
-      action: 'order_updated',
+      action: "order_updated",
       order_id: order.id
     })
     render json: { success: true }
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Pedido no encontrado' }, status: :not_found
+    render json: { error: "Pedido no encontrado" }, status: :not_found
   end
 
   def reject_proposal
     truck = current_truck
-    return render json: { error: 'No tienes un camión asignado' }, status: :unprocessable_entity unless truck
+    return render json: { error: "No tienes un camión asignado" }, status: :unprocessable_entity unless truck
 
     order = CustomerOrder.where(company_id: current_tenant.id, status: :pending, truck_id: truck.id).find(params[:order_id])
-    reason = params[:reason].presence || 'Rechazado sin motivo'
+    reason = params[:reason].presence || "Rechazado sin motivo"
 
     ActiveRecord::Base.transaction do
       order.update!(
         truck_id: nil,
-        notes: [order.notes, "Chofer #{truck.plate_number} rechazó la asignación: #{reason}"].reject(&:blank?).join(" | ")
+        notes: [ order.notes, "Chofer #{truck.plate_number} rechazó la asignación: #{reason}" ].reject(&:blank?).join(" | ")
+      )
+      
+      Notification.create!(
+        company: current_tenant,
+        title: "Pedido Rechazado por Chofer",
+        message: "El camión #{truck.plate_number} rechazó el pedido de #{order.client_name}. Motivo: #{reason}",
+        notification_type: "warning",
+        action_url: "/trucks/map"
       )
     end
 
-    ActionCable.server.broadcast("orders_#{current_tenant.id}", { action: 'order_updated', order_id: order.id })
+    ActionCable.server.broadcast("orders_#{current_tenant.id}", { action: "order_updated", order_id: order.id })
     render json: { success: true }
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Pedido no encontrado o ya no está propuesto' }, status: :not_found
+    render json: { error: "Pedido no encontrado o ya no está propuesto" }, status: :not_found
   end
 
   def cancel_order
     truck = current_truck
-    return render json: { error: 'No tienes un camión asignado' }, status: :unprocessable_entity unless truck
+    return render json: { error: "No tienes un camión asignado" }, status: :unprocessable_entity unless truck
 
     order = CustomerOrder.where(truck: truck, company_id: current_tenant.id)
                          .where(status: %i[accepted in_transit nearby arrived])
                          .find(params[:order_id])
-    
-    reason = params[:reason].presence || 'Cancelado por el chofer sin motivo'
+
+    reason = params[:reason].presence || "Cancelado por el chofer sin motivo"
 
     ActiveRecord::Base.transaction do
       order.update!(
-        status: :pending, 
+        status: :pending,
         truck: nil,
-        notes: [order.notes, "Cancelado por el chofer #{truck.plate_number}: #{reason}"].reject(&:blank?).join(" | ")
+        notes: [ order.notes, "Cancelado por el chofer #{truck.plate_number}: #{reason}" ].reject(&:blank?).join(" | ")
       )
       truck.update!(
         destination_latitude: nil,
@@ -179,15 +187,23 @@ class Driver::RadarController < ApplicationController
         route_current_index: 0,
         departure_time: nil
       )
+
+      Notification.create!(
+        company: current_tenant,
+        title: "Pedido Cancelado en Ruta",
+        message: "El camión #{truck.plate_number} canceló el pedido de #{order.client_name}. Motivo: #{reason}",
+        notification_type: "danger",
+        action_url: "/trucks/map"
+      )
     end
 
     ActionCable.server.broadcast("orders_#{current_tenant.id}", {
-      action: 'order_updated',
+      action: "order_updated",
       order_id: order.id
     })
     render json: { success: true }
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Pedido no encontrado' }, status: :not_found
+    render json: { error: "Pedido no encontrado" }, status: :not_found
   rescue => e
     render json: { success: false, error: e.message }, status: :unprocessable_entity
   end
@@ -196,7 +212,7 @@ class Driver::RadarController < ApplicationController
 
   def require_driver_access!
     unless current_user&.driver? || current_user&.admin?
-      redirect_to dashboard_path, alert: 'Acceso denegado: Solo choferes pueden usar el Radar.'
+      redirect_to dashboard_path, alert: "Acceso denegado: Solo choferes pueden usar el Radar."
     end
   end
 
@@ -225,5 +241,4 @@ class Driver::RadarController < ApplicationController
         Math.cos(lat1 * Math::PI / 180) * Math.cos(lat2 * Math::PI / 180) * Math.sin(d_lng / 2)**2
     r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   end
-
 end

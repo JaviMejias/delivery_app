@@ -22,7 +22,7 @@ export default function Login({ company }: { company: { id: number, slug: string
       <Head title={`Iniciar Sesión - ${company.name}`} />
       
       <div className="w-full max-w-sm z-10">
-        <Link href={`/order/${company.slug}`} className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-medium mb-6 transition-colors">
+        <Link href={`/order/${company.slug}`} className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 font-medium mb-6 transition-colors">
           <ArrowLeft className="w-5 h-5" /> Volver a {company.name}
         </Link>
         
@@ -40,7 +40,7 @@ export default function Login({ company }: { company: { id: number, slug: string
                   required
                   value={data.public_order_customer.login}
                   onChange={e => setData('public_order_customer', { ...data.public_order_customer, login: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
                   placeholder="ej. 56912345678 o correo@ejemplo.com"
                 />
               </div>
@@ -56,7 +56,7 @@ export default function Login({ company }: { company: { id: number, slug: string
                   required
                   value={data.public_order_customer.password}
                   onChange={e => setData('public_order_customer', { ...data.public_order_customer, password: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
                   placeholder="Tu contraseña"
                 />
               </div>
@@ -77,14 +77,14 @@ export default function Login({ company }: { company: { id: number, slug: string
             <button
               type="submit"
               disabled={processing}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl transition-colors active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
             >
               {processing ? 'Iniciando...' : 'Iniciar Sesión'}
             </button>
           </form>
 
           <p className="text-center text-sm text-slate-400 mt-6">
-            ¿No tienes cuenta? <Link href={`/order/${company.slug}/auth/register`} className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors">Regístrate aquí</Link>
+            ¿No tienes cuenta? <Link href={`/order/${company.slug}/auth/register`} className="text-primary-400 hover:text-primary-300 font-bold transition-colors">Regístrate aquí</Link>
           </p>
         </div>
       </div>

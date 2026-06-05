@@ -195,7 +195,7 @@ export default function ExpensesNew({ suppliers, pending_documents }: any) {
               <button
                 type="submit"
                 disabled={!effectiveAmount || parseFloat(effectiveAmount) <= 0}
-                className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                className="w-full py-3 bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-500/20"
               >
                 <Save size={20} /> Guardar Egreso
               </button>

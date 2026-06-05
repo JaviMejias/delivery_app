@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - db_data_dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: stockflow
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: stock_flow_development
+    ports:
+      - "5433:5432"
+
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/rails
+      - bundle_data_dev:/usr/local/bundle
+      - node_modules_data_dev:/rails/node_modules
+    ports:
+      - "3000:3000"
+      - "3036:3036"
+    depends_on:
+      - db
+    environment:
+      - RAILS_ENV=development
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=stockflow
+      - POSTGRES_PASSWORD=secretpassword
+      - APP_NAME=${APP_NAME:-StockFlow}
+    command: bash -c "bundle install && npm install && gem install foreman && bin/rails db:prepare && bin/dev"
+
+volumes:
+  db_data_dev:
+  bundle_data_dev:
+  node_modules_data_dev:

@@ -18,8 +18,8 @@ export default function Dashboard({ user, stats }: Props) {
       title: 'Productos Totales',
       value: stats.total_products,
       icon: '📦',
-      color: 'from-indigo-500 to-purple-600',
-      bgGlow: 'bg-indigo-500/10',
+      color: 'from-primary-500 to-purple-600',
+      bgGlow: 'bg-primary-500/10',
     },
     {
       title: 'Stock Bajo',
@@ -67,7 +67,7 @@ export default function Dashboard({ user, stats }: Props) {
               className={`
                 relative overflow-hidden rounded-xl border border-[var(--sf-border)]
                 bg-[var(--sf-surface)] p-5
-                hover:border-indigo-500/30 transition-all duration-300
+                hover:border-primary-500/30 transition-all duration-300
                 group cursor-default
               `}
             >

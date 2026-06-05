@@ -1,6 +1,6 @@
-# StockFlow Enterprise 🚀
+# StockFlow 🚀
 
-StockFlow Enterprise es un sistema integral de **ERP y Logística** diseñado para la administración de ventas, inventario y despachos en tiempo real. Construido con tecnología moderna, es altamente responsivo, escalable y cuenta con una arquitectura diseñada tanto para el personal administrativo como para los equipos en ruta.
+StockFlow es un sistema integral de **ERP y Logística** diseñado para la administración de ventas, inventario y despachos en tiempo real. Construido con tecnología moderna, es altamente responsivo, escalable y cuenta con una arquitectura diseñada tanto para el personal administrativo como para los equipos en ruta.
 
 ## 🌟 Características Principales
 

@@ -24,7 +24,7 @@ export default function RutInput({ value, onValueChange, className = '', ...prop
       type="text"
       value={displayValue}
       onChange={handleChange}
-      className={`w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 uppercase ${className}`}
+      className={`w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 uppercase ${className}`}
       placeholder="12.345.678-9"
       {...props}
     />

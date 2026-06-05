@@ -70,7 +70,7 @@ export default function Pagination({ pagination, currentSearch = "" }: { paginat
                   className={`
                     relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 focus:outline-offset-0 ring-1 ring-inset ring-[var(--sf-border)]
                     ${isCurrent
-                      ? 'z-10 bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                      ? 'z-10 bg-primary-500/20 text-primary-400 border border-primary-500/50'
                       : 'text-[var(--sf-text-main)] hover:bg-[var(--sf-border)]'}
                   `}
                 >

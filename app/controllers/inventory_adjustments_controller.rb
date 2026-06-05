@@ -4,13 +4,13 @@ class InventoryAdjustmentsController < ApplicationController
   def new
     # Fetch active warehouses (including trucks)
     warehouses = Warehouse.active_warehouses.order(:name)
-    
+
     # Fetch active materials (envases) and products (llenos)
-    materials = Material.where(active: true).order(:name)
-    products = Product.includes(:material, :brand).where(active: true).order(:name)
+    materials = Material.where(active: true).ordered_by_name
+    products = Product.includes(:material, :brand).where(active: true).ordered_by_name
 
     render inertia: "Inventory/Adjustments/New", props: {
-      warehouses: warehouses.as_json(only: [:id, :name]),
+      warehouses: warehouses.as_json(only: [ :id, :name ]),
       materials: materials.map { |m| { id: m.id, name: m.full_name } },
       products: products.map do |p|
         {

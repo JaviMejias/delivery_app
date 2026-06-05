@@ -21,7 +21,7 @@ export function CustomSwitch({ checked, onChange, label, description, className 
         {/* Track */}
         <div 
           className={`block w-12 h-6 rounded-full transition-colors duration-300 ease-in-out shadow-inner ${
-            checked ? 'bg-indigo-500' : 'bg-[var(--sf-border)] group-hover:bg-gray-500/50'
+            checked ? 'bg-primary-500' : 'bg-[var(--sf-border)] group-hover:bg-gray-500/50'
           }`}
         ></div>
         {/* Thumb */}
@@ -31,13 +31,13 @@ export function CustomSwitch({ checked, onChange, label, description, className 
           }`}
         >
           {/* Opcional: Pequeño indicador interno para darle más vida */}
-          <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${checked ? 'bg-indigo-500' : 'bg-gray-300'}`} />
+          <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${checked ? 'bg-primary-500' : 'bg-gray-300'}`} />
         </div>
       </div>
       {(label || description) && (
         <div className="flex flex-col">
           {label && (
-            <span className={`text-sm font-medium transition-colors ${checked ? 'text-indigo-400' : 'text-[var(--sf-text-main)] group-hover:text-[var(--sf-text-muted)]'}`}>
+            <span className={`text-sm font-medium transition-colors ${checked ? 'text-primary-400' : 'text-[var(--sf-text-main)] group-hover:text-[var(--sf-text-muted)]'}`}>
               {label}
             </span>
           )}

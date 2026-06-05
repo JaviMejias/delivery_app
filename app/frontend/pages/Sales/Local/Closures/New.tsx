@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
+import BackButton from '@/components/BackButton'
 import { CustomSelect } from '@/components/CustomSelect'
 import CurrencyInput from '@/components/CurrencyInput'
 import { CustomDatePicker } from '@/components/CustomDatePicker'
@@ -31,15 +32,23 @@ const formatCLP = (amount: number | string) => {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(amount))
 }
 
+const getLocalDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function LocalClosureNew({ warehouses, selected_warehouse_id, selected_date, already_closed, system_totals }: Props) {
   const [paramsForm, setParamsForm] = useState({
     warehouse_id: selected_warehouse_id || '',
-    date: selected_date || new Date().toISOString().split('T')[0]
+    date: selected_date || getLocalDateString()
   })
 
   const form = useForm({
     warehouse_id: selected_warehouse_id || '',
-    date: selected_date || new Date().toISOString().split('T')[0],
+    date: selected_date || getLocalDateString(),
     system_cash: system_totals.cash,
     system_card: system_totals.card,
     system_transfer: system_totals.transfer,
@@ -72,7 +81,7 @@ export default function LocalClosureNew({ warehouses, selected_warehouse_id, sel
     form.setData({
       ...form.data,
       warehouse_id: selected_warehouse_id || '',
-      date: selected_date || new Date().toISOString().split('T')[0],
+      date: selected_date || getLocalDateString(),
       system_cash: system_totals.cash,
       system_card: system_totals.card,
       system_transfer: system_totals.transfer,
@@ -84,7 +93,7 @@ export default function LocalClosureNew({ warehouses, selected_warehouse_id, sel
     e.preventDefault()
     
     const totalDeclared = parseFloat(form.data.declared_total || '0')
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     
     const isZero = totalDeclared === 0
     const isDifferentDate = paramsForm.date !== today
@@ -145,14 +154,8 @@ export default function LocalClosureNew({ warehouses, selected_warehouse_id, sel
           icon={<Lock className="w-8 h-8 opacity-80" />}
           description="Declara los montos recaudados en el día y verifica si cuadran con el sistema."
           color="indigo"
-        >
-          <Link
-            href="/sales/local/closures"
-            className="px-4 py-2 bg-[var(--sf-bg)] text-[var(--sf-text-main)] font-medium rounded-lg hover:bg-[var(--sf-surface)] border border-[var(--sf-border)] transition-colors"
-          >
-            Cancelar
-          </Link>
-        </PageHeader>
+          backUrl="/sales/local/closures"
+        />
 
         {/* Selección de Parámetros */}
         <Card>
@@ -270,7 +273,7 @@ export default function LocalClosureNew({ warehouses, selected_warehouse_id, sel
                         <textarea
                           value={form.data.observations}
                           onChange={(e) => form.setData('observations', e.target.value)}
-                          className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 min-h-[100px]"
+                          className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 min-h-[100px]"
                           placeholder="Explica si hay descuadres, ej: Faltó billete de 10.000..."
                         ></textarea>
                       </div>
@@ -305,7 +308,7 @@ export default function LocalClosureNew({ warehouses, selected_warehouse_id, sel
                     <button
                       type="submit"
                       disabled={form.processing}
-                      className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 text-lg flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/25 disabled:opacity-50 text-lg flex items-center justify-center gap-2"
                     >
                       <span>🔒</span> Confirmar y Cerrar Caja
                     </button>

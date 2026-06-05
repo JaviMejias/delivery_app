@@ -6,10 +6,10 @@ class ReceivePurchaseOrderService
   end
 
   def call
-    raise 'Esta orden ya fue recibida.' if @order.received?
+    raise "Esta orden ya fue recibida." if @order.received?
 
     warehouse = Warehouse.active_warehouses.first
-    raise 'Debes crear al menos una Bodega Activa antes de recibir compras.' unless warehouse
+    raise "Debes crear al menos una Bodega Activa antes de recibir compras." unless warehouse
 
     ActiveRecord::Base.transaction do
       @order.purchase_order_items.each do |item|

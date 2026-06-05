@@ -60,7 +60,7 @@ export function CustomDatePicker({
         }}
         placeholder={placeholder}
         required={required}
-        className={`w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 ${className}`}
+        className={`w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 ${className}`}
       />
       <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[var(--sf-text-muted)]">
         <Calendar className="w-4 h-4" />

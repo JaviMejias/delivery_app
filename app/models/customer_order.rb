@@ -13,9 +13,9 @@ class CustomerOrder < ApplicationRecord
   after_create_commit :broadcast_new_order
   after_update_commit :broadcast_tracking_status_change, if: -> { saved_change_to_status? }
 
-  scope :active, -> { where.not(status: [:completed, :cancelled]) }
+  scope :active, -> { where.not(status: [ :completed, :cancelled ]) }
   scope :pending_for_company, ->(company_id) { where(company_id: company_id, status: :pending) }
-  scope :active_for_truck, ->(truck) { where(truck: truck, status: [:accepted, :in_transit, :nearby, :arrived]) }
+  scope :active_for_truck, ->(truck) { where(truck: truck, status: [ :accepted, :in_transit, :nearby, :arrived ]) }
 
   scope :search_by_query, ->(query) {
     if query.present?
@@ -24,7 +24,7 @@ class CustomerOrder < ApplicationRecord
   }
 
   scope :filter_by_status, ->(status_val) {
-    where(status: status_val) if status_val.present? && status_val != 'all'
+    where(status: status_val) if status_val.present? && status_val != "all"
   }
 
   scope :filter_by_date, ->(start_date, end_date) {
@@ -32,23 +32,23 @@ class CustomerOrder < ApplicationRecord
   }
 
   def details_not_empty
-    if details.blank? || (details['items'].blank? && details['quick_order'].blank?)
+    if details.blank? || (details["items"].blank? && details["quick_order"].blank?)
       errors.add(:details, "El pedido no puede estar vacío")
     end
   end
 
   def total_cylinders
-    return 0 unless details['items'].present?
-    details['items'].sum { |item| item['quantity'].to_i }
+    return 0 unless details["items"].present?
+    details["items"].sum { |item| item["quantity"].to_i }
   end
 
   def summary_text
-    if details['quick_order'].present?
-      details['quick_order']
-    elsif details['items'].present?
-      details['items'].map { |i| "#{i['quantity']}x #{i['name']}" }.join(', ')
+    if details["quick_order"].present?
+      details["quick_order"]
+    elsif details["items"].present?
+      details["items"].map { |i| "#{i['quantity']}x #{i['name']}" }.join(", ")
     else
-      'Pedido sin detalles'
+      "Pedido sin detalles"
     end
   end
 
@@ -60,7 +60,7 @@ class CustomerOrder < ApplicationRecord
 
   def broadcast_new_order
     ActionCable.server.broadcast("orders_#{company_id}", {
-      action: 'new_order',
+      action: "new_order",
       order: {
         id: id,
         client_name: client_name,
@@ -76,14 +76,14 @@ class CustomerOrder < ApplicationRecord
         latitude: truck.latitude.to_f,
         longitude: truck.longitude.to_f,
         plate_number: truck.plate_number,
-        driver_name: truck.driver&.full_name || 'Sin Chofer',
+        driver_name: truck.driver&.full_name || "Sin Chofer",
         route_points: truck.route_points ? JSON.parse(truck.route_points) : nil,
         departure_time: truck.departure_time&.iso8601
       }
     end
 
     ActionCable.server.broadcast("tracking_#{order_token}", {
-      action: 'status_changed',
+      action: "status_changed",
       status: status,
       truck: truck_data,
       notes: notes

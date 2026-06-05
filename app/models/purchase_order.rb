@@ -8,7 +8,17 @@ class PurchaseOrder < ApplicationRecord
   enum :status, { draft: 0, confirmed: 1, received: 2, cancelled: 3 }
 
   scope :with_full_details, -> { includes(:supplier, :purchase_documents, purchase_order_items: { product: :material }) }
-  scope :search_by_query, ->(q) { joins(:supplier).where('purchase_orders.id::text ILIKE :q OR suppliers.name ILIKE :q', q: "%#{q}%") if q.present? }
+  scope :search_by_query, ->(q) { 
+    if q.present?
+      clean_q = q.to_s.strip
+      if clean_q.match?(/^(OC-)?\d+$/i)
+        exact_id = clean_q.gsub(/\D/, '').to_i
+        joins(:supplier).where("purchase_orders.id = :id OR suppliers.name ILIKE :q", id: exact_id, q: "%#{clean_q}%")
+      else
+        joins(:supplier).where("suppliers.name ILIKE :q", q: "%#{clean_q}%")
+      end
+    end
+  }
 
   validates :status, presence: true
 

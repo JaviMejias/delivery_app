@@ -39,6 +39,7 @@ export default function Tracking({ company, current_customer, order: initialOrde
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isTopExpanded, setIsTopExpanded] = useState(true)
   const [isBottomExpanded, setIsBottomExpanded] = useState(true)
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
   const mapRef = useRef<any>(null)
   const truckMarkerRef = useRef<any>(null)
   const routePolylineRef = useRef<any>(null)
@@ -47,7 +48,7 @@ export default function Tracking({ company, current_customer, order: initialOrde
   const statusConfig = {
     pending:    { label: 'Buscando Repartidor',  sublabel: 'Asignando el chofer más cercano...', color: 'text-amber-400',   bg: 'bg-amber-500/20',   icon: TruckIcon,   pulse: true  },
     accepted:   { label: 'En Preparación',        sublabel: 'El repartidor está preparando tu pedido', color: 'text-sky-400',     bg: 'bg-sky-500/20',     icon: Clock,       pulse: false },
-    in_transit: { label: 'En Camino',             sublabel: 'El repartidor viene hacia ti',       color: 'text-indigo-400',  bg: 'bg-indigo-500/20',  icon: Navigation,  pulse: true  },
+    in_transit: { label: 'En Camino',             sublabel: 'El repartidor viene hacia ti',       color: 'text-primary-400',  bg: 'bg-primary-500/20',  icon: Navigation,  pulse: true  },
     nearby:     { label: '¡Está Cerca!',          sublabel: 'El repartidor está a menos de 500m', color: 'text-orange-400',  bg: 'bg-orange-500/20',  icon: Bell,        pulse: true  },
     arrived:    { label: '¡Llegó tu Pedido!',     sublabel: 'El repartidor está en tu puerta',    color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: CheckCircle, pulse: true  },
     completed:  { label: '¡Entregado!',           sublabel: 'Gracias por tu compra',              color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: CheckCircle, pulse: false },
@@ -182,7 +183,7 @@ export default function Tracking({ company, current_customer, order: initialOrde
     const customerPos: [number, number] = [order.latitude, order.longitude]
     mapRef.current = L.map('tracking-map', { zoomControl: false, attributionControl: false }).setView(customerPos, 14)
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapRef.current)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, maxNativeZoom: 19, className: 'map-dark-mode' }).addTo(mapRef.current)
 
     
     const customerIcon = L.divIcon({
@@ -196,6 +197,8 @@ export default function Tracking({ company, current_customer, order: initialOrde
       iconSize: [40, 60], iconAnchor: [20, 50]
     })
     L.marker(customerPos, { icon: customerIcon }).addTo(mapRef.current)
+
+    setIsMapLoaded(true)
   }
 
   const handleCancelOrder = async () => {
@@ -243,7 +246,7 @@ export default function Tracking({ company, current_customer, order: initialOrde
     const L = (window as any).L
     if (!L || !mapRef.current) return
 
-    if (!order.truck?.latitude) {
+    if (order.truck?.latitude == null || order.truck?.longitude == null) {
       if (truckMarkerRef.current) { truckMarkerRef.current.remove(); truckMarkerRef.current = null }
       if (routePolylineRef.current) { routePolylineRef.current.remove(); routePolylineRef.current = null }
       return
@@ -257,10 +260,11 @@ export default function Tracking({ company, current_customer, order: initialOrde
         routePolylineRef.current.setLatLngs(order.truck.route_points)
       } else {
         routePolylineRef.current = L.polyline(order.truck.route_points, {
-          color: '#6366f1',
-          weight: 4,
-          opacity: 0.8,
-          dashArray: order.status === 'accepted' ? '8 8' : null,
+          color: '#a855f7',
+          weight: 6,
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round'
         }).addTo(mapRef.current)
       }
     }
@@ -271,10 +275,10 @@ export default function Tracking({ company, current_customer, order: initialOrde
       const truckIcon = L.divIcon({
         className: '',
         html: `<div class="flex flex-col items-center">
-          <div class="w-12 h-12 rounded-full bg-indigo-500 border-2 border-white shadow-xl shadow-indigo-500/50 flex items-center justify-center text-white animate-pulse">
+          <div class="w-12 h-12 rounded-full bg-primary-500 border-2 border-white shadow-xl shadow-primary-500/50 flex items-center justify-center text-white animate-pulse">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-4v10a2 2 0 0 0 2 2z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
           </div>
-          <div class="mt-1 px-2 py-0.5 bg-indigo-950 border border-indigo-500/30 rounded text-[10px] font-black text-indigo-300 truncate max-w-[80px]">
+          <div class="mt-1 px-2 py-0.5 bg-primary-950 border border-primary-500/30 rounded text-[10px] font-black text-primary-300 truncate max-w-[80px]">
             ${order.truck.plate_number}
           </div>
         </div>`,
@@ -286,7 +290,7 @@ export default function Tracking({ company, current_customer, order: initialOrde
       const customerPos: [number, number] = [order.latitude, order.longitude]
       mapRef.current.fitBounds(L.latLngBounds([customerPos, truckPos]), { padding: [60, 60], maxZoom: 16 })
     }
-  }, [order.truck?.latitude, order.truck?.longitude, order.status])
+  }, [isMapLoaded, order.truck?.latitude, order.truck?.longitude, order.status])
 
   return (
     <div className="h-[100dvh] w-full bg-slate-950 flex flex-col font-sans overflow-hidden relative">
@@ -299,6 +303,38 @@ export default function Tracking({ company, current_customer, order: initialOrde
       {}
       <div className="flex-1 relative bg-slate-900">
         <div id="tracking-map" className="absolute inset-0 z-0" />
+
+        {/* --------------------- */}
+        {/* FLOATING CONTROLS     */}
+        {/* --------------------- */}
+        <div 
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-[50] flex flex-col gap-4 transition-all duration-500 pointer-events-none"
+        >
+          {order.truck && order.truck.latitude != null && order.truck.longitude != null && (
+            <button 
+              onClick={() => {
+                if (mapRef.current && order.truck && order.truck.latitude != null) {
+                  mapRef.current.flyTo([order.truck.latitude, order.truck.longitude], 16, { animate: true, duration: 1.0 })
+                }
+              }}
+              className="w-12 h-12 rounded-full bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 text-emerald-400 shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-110 active:scale-95 pointer-events-auto"
+              title="Centrar en el camión"
+            >
+              <TruckIcon className="w-5 h-5" />
+            </button>
+          )}
+          <button 
+            onClick={() => {
+              if (mapRef.current && order.latitude != null) {
+                mapRef.current.flyTo([order.latitude, order.longitude], 16, { animate: true, duration: 1.0 })
+              }
+            }}
+            className="w-12 h-12 rounded-full bg-slate-900/90 backdrop-blur-xl border border-rose-500/30 text-rose-400 shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-110 active:scale-95 pointer-events-auto"
+            title="Centrar en mi destino"
+          >
+            <MapPin className="w-5 h-5" />
+          </button>
+        </div>
 
         {}
         <div className="absolute top-[90px] sm:top-[100px] left-4 right-4 z-[1000] pointer-events-none">
@@ -404,14 +440,14 @@ export default function Tracking({ company, current_customer, order: initialOrde
           </div>
 
           {order.truck && (
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between mb-4">
+            <div className="bg-primary-500/10 border border-primary-500/20 rounded-2xl p-4 flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Vehículo Asignado</p>
+                <p className="text-[10px] font-black uppercase text-primary-400 tracking-wider">Vehículo Asignado</p>
                 <p className="text-sm font-bold text-white mt-0.5">{order.truck.plate_number}</p>
                 <p className="text-xs text-slate-400">{order.truck.driver_name}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-                <TruckIcon className="w-6 h-6 text-indigo-400" />
+              <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center border border-primary-500/30">
+                <TruckIcon className="w-6 h-6 text-primary-400" />
               </div>
             </div>
           )}

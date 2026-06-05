@@ -2,11 +2,11 @@ class WarehousesController < ApplicationController
   before_action :require_admin!
 
   def index
-    warehouses = Warehouse.stationary.ordered_by_name.search_by_name(params[:search])
+    warehouses = Warehouse.stationary.recent.search_by_name(params[:search])
     pagy, records = pagy(:offset, warehouses, limit: 20)
 
     render inertia: "Inventory/Warehouses/Index", props: {
-      warehouses: records.as_json(only: [:id, :name, :active, :card_surcharge_type, :card_surcharge_amount, :address, :latitude, :longitude]),
+      warehouses: records.as_json(only: [ :id, :name, :active, :card_surcharge_type, :card_surcharge_amount, :address, :latitude, :longitude ]),
       pagination: extract_pagy(pagy),
       currentSearch: params[:search]
     }

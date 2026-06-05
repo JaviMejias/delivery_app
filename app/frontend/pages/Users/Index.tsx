@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
-import Swal from 'sweetalert2'
+import { confirmDelete } from '@/utils/alerts'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import Pagination from '@/components/Pagination'
 import { Users, Pencil, Trash2, Save, X, Shield, Lock, Phone } from 'lucide-react'
+import { TableFilters } from '@/components/TableFilters'
 import { CustomSwitch } from '@/components/CustomSwitch'
 import { CustomSelect } from '@/components/CustomSelect'
 import { CustomDatePicker } from '@/components/CustomDatePicker'
@@ -38,6 +39,7 @@ interface Props {
   users: User[]
   warehouses: Warehouse[]
   pagination: any
+  currentRole?: string
 }
 
 const ROLE_OPTIONS = [
@@ -55,10 +57,19 @@ const TAB_OPTIONS = [
   { value: 'driver', label: 'Choferes' }
 ]
 
-export default function UsersIndex({ users, warehouses, pagination }: Props) {
+export default function UsersIndex({ users, warehouses, pagination, currentRole }: Props) {
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [activeTab, setActiveTab] = useState('all')
+  const [role, setRole] = useState(currentRole || 'all')
+  const [isFiltering, setIsFiltering] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const applyFilters = () => {
+    router.get('/users', { role }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
+  }
 
   const form = useForm({
     first_name: '',
@@ -117,25 +128,13 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
   }
 
   const disableUser = (id: number) => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Desactivar usuario?',
-      text: "El usuario ya no podrá iniciar sesión en el sistema.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6366f1',
+      text: 'El usuario ya no podrá iniciar sesión en el sistema.',
       confirmButtonText: 'Sí, desactivar',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-dark-card)',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.delete(`/users/${id}`, {
-          onSuccess: () => {
-            if (editingUser?.id === id) cancelEdit()
-          }
-        })
-      }
+      onConfirm: () => router.delete(`/users/${id}`, {
+        onSuccess: () => { if (editingUser?.id === id) cancelEdit() }
+      })
     })
   }
 
@@ -153,11 +152,11 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1" ref={formRef}>
-            <Card className={editingUser ? 'ring-2 ring-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
+            <Card className={editingUser ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${
                   editingUser 
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
+                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-400' 
                     : 'bg-[var(--sf-surface)] border-[var(--sf-border)] text-[var(--sf-text-main)]'
                 }`}>
                   {editingUser ? <Pencil className="w-5 h-5 shrink-0" /> : <Users className="w-5 h-5 shrink-0 text-[var(--sf-text-muted)]" />}
@@ -185,7 +184,7 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                         type="text"
                         value={form.data.first_name}
                         onChange={e => form.setData('first_name', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
                         required
                         placeholder="Ej. Juan"
                       />
@@ -196,7 +195,7 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                         type="text"
                         value={form.data.last_name}
                         onChange={e => form.setData('last_name', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
                         required
                         placeholder="Ej. Pérez"
                       />
@@ -225,13 +224,13 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                   <div className="flex flex-col gap-4">
                     <div>
                       <label className="block text-xs font-medium text-[var(--sf-text-muted)] mb-1 uppercase tracking-wider">
-                        Correo (Login) {form.data.role === 'driver' && <span className="text-indigo-400 normal-case ml-2">(Se auto-generará si se deja en blanco)</span>}
+                        Correo (Login) {form.data.role === 'driver' && <span className="text-primary-400 normal-case ml-2">(Se auto-generará si se deja en blanco)</span>}
                       </label>
                       <input
                         type="email"
                         value={form.data.email}
                         onChange={e => form.setData('email', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow"
                         required={form.data.role !== 'driver'}
                         placeholder={form.data.role === 'driver' ? "Se genera automáticamente con el RUT" : "ejemplo@empresa.com"}
                         autoComplete="off"
@@ -329,7 +328,7 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                       type="password"
                       value={form.data.password}
                       onChange={e => form.setData('password', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 transition-shadow mb-1"
+                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 transition-shadow mb-1"
                       required={!editingUser && form.data.role !== 'driver'}
                       placeholder={editingUser ? "Dejar en blanco para no cambiar la contraseña" : form.data.role === 'driver' ? "Se genera aleatoriamente si está en blanco" : "Mínimo 6 caracteres"}
                       minLength={6}
@@ -355,7 +354,7 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                     <button
                       type="submit"
                       disabled={form.processing}
-                      className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       {editingUser ? 'Actualizar Usuario' : 'Crear Usuario'}
@@ -376,23 +375,16 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
             </Card>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+              <TableFilters.Select
+                label="Rol"
+                value={role}
+                onChange={setRole}
+                options={TAB_OPTIONS}
+              />
+            </TableFilters>
             <Card className="overflow-hidden flex flex-col h-full">
-              <div className="flex border-b border-[var(--sf-border)] overflow-x-auto no-scrollbar">
-                {TAB_OPTIONS.map(tab => (
-                  <button
-                    key={tab.value}
-                    onClick={() => setActiveTab(tab.value)}
-                    className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                      activeTab === tab.value
-                        ? 'border-indigo-500 text-indigo-400'
-                        : 'border-transparent text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:border-[var(--sf-border)]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
               <div className="flex-1 overflow-auto">
                 <Table>
                   <Table.Thead>
@@ -411,10 +403,10 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                         </Table.Td>
                       </Table.Tr>
                     ) : (
-                      users.filter(u => activeTab === 'all' || u.role === activeTab).map((u) => {
+                      users.map((u) => {
                         const roleObj = ROLE_OPTIONS.find(r => r.value === u.role)
                         return (
-                          <Table.Tr key={u.id} className={`${!u.active ? 'opacity-60 bg-[var(--sf-bg)]' : ''} ${editingUser?.id === u.id ? 'bg-indigo-500/5' : ''}`}>
+                          <Table.Tr key={u.id} className={`${!u.active ? 'opacity-60 bg-[var(--sf-bg)]' : ''} ${editingUser?.id === u.id ? 'bg-primary-500/5' : ''}`}>
                             <Table.Td>
                               <div className="font-medium text-[var(--sf-text-main)]">{u.first_name} {u.last_name}</div>
                               <div className="text-xs text-[var(--sf-text-muted)] mt-0.5">
@@ -428,7 +420,7 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                                 {roleObj?.label || u.role}
                               </div>
                               {u.warehouse_id && (
-                                <div className="text-xs text-indigo-400 mt-1 font-medium bg-indigo-500/10 px-1.5 py-0.5 rounded inline-block">
+                                <div className="text-xs text-primary-400 mt-1 font-medium bg-primary-500/10 px-1.5 py-0.5 rounded inline-block">
                                   🏢 {warehouses.find(w => w.id === u.warehouse_id)?.name}
                                 </div>
                               )}
@@ -448,13 +440,13 @@ export default function UsersIndex({ users, warehouses, pagination }: Props) {
                               </span>
                             </Table.Td>
                             <Table.Td className="text-right">
-                              <div className="flex items-center justify-end gap-3">
-                                <button onClick={() => editUser(u)} className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1.5 transition-colors">
-                                  <Pencil className="w-3.5 h-3.5" /> Editar
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={() => editUser(u)} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors" title="Editar">
+                                  <Pencil size={18} />
                                 </button>
                                 {u.active && (
-                                  <button onClick={() => disableUser(u.id)} className="text-red-400 hover:text-red-300 font-medium flex items-center gap-1.5 transition-colors">
-                                    <Trash2 className="w-3.5 h-3.5" /> Desactivar
+                                  <button onClick={() => disableUser(u.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors" title="Desactivar">
+                                    <Trash2 size={18} />
                                   </button>
                                 )}
                               </div>

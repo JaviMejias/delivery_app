@@ -7,6 +7,7 @@ class FetchRouteSettlementShowDataService
       settlement: settlement.as_json(
         include: {
           truck: { include: [ :warehouse, :driver ] },
+          route_settlement_expenses: {},
           route_settlement_items: {
             include: {
               product: { include: [ :material, :brand, :product_prices ] },

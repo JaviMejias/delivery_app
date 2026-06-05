@@ -2,10 +2,24 @@ class RouteSettlementsController < ApplicationController
   before_action :require_route_access!
 
   def index
-    settlements = RouteSettlement.with_details.recent.search_by_query(params[:search])
+    settlements = RouteSettlement.with_details.includes(:route_settlement_expenses, route_settlement_items: { product: :material }).recent
+    
+    if params[:search].present?
+      settlements = settlements.search_by_query(params[:search])
+    end
+
+    start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.today.beginning_of_month
+    end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : Date.today
+
+    settlements = settlements.where(date: start_date..end_date)
+    if current_user.driver? && !current_user.admin?
+      truck_ids = Truck.where(driver_id: current_user.id, company_id: current_tenant.id).pluck(:id)
+      settlements = settlements.where(truck_id: truck_ids)
+    end
+
     pagy, records = pagy(:offset, settlements, limit: 20)
 
-    index_data = FetchRouteSettlementIndexDataService.call(records)
+    index_data = FetchRouteSettlementIndexDataService.call(records, current_user, current_tenant)
 
     render inertia: "Sales/Settlements/Index", props: {
       settlements: index_data[:settlements],
@@ -35,6 +49,16 @@ class RouteSettlementsController < ApplicationController
     else
       puts "Update failed! Errors: #{settlement.errors.full_messages}"
       redirect_to route_settlement_path(settlement), alert: "Error: #{settlement.errors.full_messages.join(', ')}"
+    end
+  end
+
+  def destroy
+    settlement = RouteSettlement.find(params[:id])
+    if settlement.draft?
+      settlement.destroy
+      redirect_to route_settlements_path, notice: "Borrador de rendición eliminado correctamente."
+    else
+      redirect_to route_settlements_path, alert: "No se puede eliminar una rendición que ya fue completada."
     end
   end
 

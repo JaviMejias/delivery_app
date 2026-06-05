@@ -4,29 +4,37 @@ interface Props extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value
   value: string | number;
   onValueChange: (value: string) => void;
   currencySymbol?: string;
+  allowNegative?: boolean;
 }
 
-export default function CurrencyInput({ value, onValueChange, currencySymbol = '$', className = '', ...props }: Props) {
+export default function CurrencyInput({ value, onValueChange, currencySymbol = '$', allowNegative = false, className = '', ...props }: Props) {
   const [displayValue, setDisplayValue] = useState('');
 
   useEffect(() => {
-    const strippedDisplay = displayValue.replace(/\D/g, '');
     const propString = value?.toString() || '';
-    
-    if (strippedDisplay !== propString) {
-      if (!propString) {
-        setDisplayValue('');
+    const isNegative = propString.startsWith('-');
+    const strippedProp = propString.replace(/\D/g, '');
+
+    const currentStrippedDisplay = displayValue.replace(/\D/g, '');
+    const currentIsNegative = displayValue.startsWith('-');
+
+    if (strippedProp !== currentStrippedDisplay || isNegative !== currentIsNegative) {
+      if (!strippedProp) {
+        setDisplayValue(isNegative ? '-' : '');
       } else {
-        const num = parseInt(propString, 10);
+        const num = parseInt(strippedProp, 10);
         if (!isNaN(num)) {
-          setDisplayValue(num.toLocaleString('es-CL'));
+          setDisplayValue(isNegative ? `-${num.toLocaleString('es-CL')}` : num.toLocaleString('es-CL'));
         }
       }
     }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawValue = e.target.value.replace(/\D/g, '');
+    let rawValue = e.target.value;
+    const isNegative = allowNegative && rawValue.startsWith('-');
+    
+    rawValue = rawValue.replace(/\D/g, '');
     
     if (rawValue.length > 1 && rawValue.startsWith('0')) {
       rawValue = rawValue.replace(/^0+/, '');
@@ -34,12 +42,13 @@ export default function CurrencyInput({ value, onValueChange, currencySymbol = '
     }
 
     if (rawValue === '') {
-      setDisplayValue('');
-      onValueChange('');
+      setDisplayValue(isNegative ? '-' : '');
+      onValueChange(isNegative ? '-' : '');
     } else {
       const num = parseInt(rawValue, 10);
-      setDisplayValue(num.toLocaleString('es-CL'));
-      onValueChange(rawValue);
+      const finalStr = isNegative ? `-${num}` : `${num}`;
+      setDisplayValue(isNegative ? `-${num.toLocaleString('es-CL')}` : num.toLocaleString('es-CL'));
+      onValueChange(finalStr);
     }
   };
 
@@ -55,7 +64,7 @@ export default function CurrencyInput({ value, onValueChange, currencySymbol = '
         inputMode="numeric"
         value={displayValue}
         onChange={handleChange}
-        className={`w-full ${currencySymbol ? 'pl-8' : 'px-4'} pr-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 ${className}`}
+        className={`w-full ${currencySymbol ? 'pl-8' : 'px-4'} pr-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 ${className}`}
         {...props}
       />
     </div>

@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
-import { Head, useForm } from '@inertiajs/react'
+import { Head, useForm, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import { Building2 } from 'lucide-react'
+import { TableFilters } from '@/components/TableFilters'
 import CompanyForm from '@/components/Companies/CompanyForm'
 import CompanyTable from '@/components/Companies/CompanyTable'
 import { Company } from '@/components/Companies/types'
@@ -10,11 +11,22 @@ import { Company } from '@/components/Companies/types'
 interface Props {
   companies: Company[]
   pagination: any
+  currentSearch?: string
 }
 
-export default function CompaniesIndex({ companies, pagination }: Props) {
+export default function CompaniesIndex({ companies, pagination, currentSearch }: Props) {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
+  const [search, setSearch] = useState(currentSearch || '')
+  const [isFiltering, setIsFiltering] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const applyFilters = () => {
+    router.get('/companies', { search }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
+  }
 
   const form = useForm({
     name: '',
@@ -99,7 +111,16 @@ export default function CompaniesIndex({ companies, pagination }: Props) {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+              <TableFilters.Search
+                value={search}
+                onChange={setSearch}
+                onSearch={applyFilters}
+                placeholder="Buscar empresa por nombre o RUT..."
+                className="w-full sm:w-96"
+              />
+            </TableFilters>
             <CompanyTable
               companies={companies}
               pagination={pagination}

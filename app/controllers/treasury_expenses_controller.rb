@@ -1,42 +1,59 @@
 class TreasuryExpensesController < ApplicationController
+  before_action :require_admin!
+
   def index
     expenses = TreasuryExpense.order(date: :desc, created_at: :desc).includes(expense_documents: :purchase_document)
-    
-    if params[:date_from].present?
-      expenses = expenses.where('date >= ?', params[:date_from])
-    end
-    if params[:date_to].present?
-      expenses = expenses.where('date <= ?', params[:date_to])
+
+    expenses = expenses.search_by_query(params[:search]) if params[:search].present?
+
+    start_date = params[:start_date].presence || Date.today.beginning_of_month.to_s
+    end_date = params[:end_date].presence || Date.today.end_of_month.to_s
+
+    expenses = expenses.where("date >= ?", start_date).where("date <= ?", end_date)
+
+    if params[:payment_method].present?
+      expenses = expenses.where(payment_method: params[:payment_method])
     end
 
-    pagy, records = pagy(:offset, expenses, limit: 20)
+    if params[:format] == "xlsx"
+      # Just returning an empty excel or existing service if we have one. I'll need to create ExportTreasuryExpensesService later if not exists.
+      send_data ExportTreasuryExpensesService.new(expenses, params[:theme]).to_xlsx, filename: "egresos-#{Date.today}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else
+      pagy, records = pagy(:offset, expenses, limit: 20)
 
-    render inertia: "Treasury/Expenses/Index", props: {
-      expenses: records.as_json(include: { expense_documents: { include: :purchase_document } }),
-      pagination: extract_pagy(pagy)
-    }
+      render inertia: "Treasury/Expenses/Index", props: {
+        expenses: records.as_json(include: { expense_documents: { include: :purchase_document } }),
+        filters: {
+          search: params[:search],
+          start_date: start_date,
+          end_date: end_date,
+          payment_method: params[:payment_method]
+        },
+        pagination: extract_pagy(pagy)
+      }
+    end
   end
 
   def new
     suppliers = Supplier.all.order(:name)
-    pending_documents = PurchaseDocument.includes(:supplier, :credit_notes).where(status: [:pending, :partial], document_type: [:invoice, :receipt]).order(:issue_date)
+    pending_documents = PurchaseDocument.includes(:supplier, :credit_notes).where(status: [ :pending, :partial ], document_type: [ :invoice, :receipt ]).order(:issue_date)
 
     render inertia: "Treasury/Expenses/New", props: {
       suppliers: suppliers.as_json,
-      pending_documents: pending_documents.as_json(include: [:supplier, :credit_notes])
+      pending_documents: pending_documents.as_json(include: [ :supplier, :credit_notes ])
     }
   end
 
   def create
     expense = TreasuryExpense.new(expense_params)
     expense.company_id = current_tenant.id
-    
+
     ActiveRecord::Base.transaction do
       if expense.save
         if params[:applications].present?
           params[:applications].each do |app|
             next if app[:amount_applied].to_f <= 0
-            
+
             ExpenseDocument.create!(
               treasury_expense: expense,
               purchase_document_id: app[:purchase_document_id],
@@ -54,7 +71,7 @@ class TreasuryExpensesController < ApplicationController
 
   def show
     expense = TreasuryExpense.includes(expense_documents: :purchase_document).find(params[:id])
-    
+
     render inertia: "Treasury/Expenses/Show", props: {
       expense: expense.as_json(include: { expense_documents: { include: :purchase_document } })
     }

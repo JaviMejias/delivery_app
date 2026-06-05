@@ -2,7 +2,8 @@ import { Head, Link, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
-import { FileBadge2, ExternalLink, CheckCircle, Trash2, Send, XCircle, Save, Upload, Pencil } from 'lucide-react'
+import BackButton from '@/components/BackButton'
+import { FileBadge2, ExternalLink, CheckCircle, Trash2, Send, XCircle, Save, Upload, Pencil, Calendar } from 'lucide-react'
 import Swal from 'sweetalert2'
 import { useState, useRef } from 'react'
 import { useForm } from '@inertiajs/react'
@@ -15,9 +16,11 @@ interface Props {
   document: any
   products?: any[]
   available_invoices?: any[]
+  suppliers?: any[]
+  purchase_orders?: any[]
 }
 
-export default function DocumentShow({ document, products = [], available_invoices = [] }: Props) {
+export default function DocumentShow({ document, products = [], available_invoices = [], suppliers = [], purchase_orders = [] }: Props) {
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount)
   }
@@ -128,7 +131,9 @@ export default function DocumentShow({ document, products = [], available_invoic
     issue_date: document.issue_date || new Date().toISOString().split('T')[0],
     due_date: document.due_date || new Date().toISOString().split('T')[0],
     document_type: document.document_type || 'invoice',
-    reference_document_id: document.reference_document_id || ''
+    reference_document_id: document.reference_document_id || '',
+    supplier_id: document.supplier_id || '',
+    purchase_order_id: document.purchase_order_id || ''
   })
 
   const [fileName, setFileName] = useState<string | null>(null)
@@ -180,12 +185,10 @@ export default function DocumentShow({ document, products = [], available_invoic
 
       <div className="space-y-6">
         {/* Encabezado */}
-        <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-[var(--sf-surface)] border border-[var(--sf-border)] border-l-4 border-l-indigo-500 mb-2">
+        <div className="glass-panel interactive-card p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-[var(--sf-surface)] border border-[var(--sf-border)] border-l-4 border-l-indigo-500 mb-2">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Link href="/purchases/documents" className="px-3 py-2 text-sm font-semibold text-[var(--sf-text-muted)] bg-[var(--sf-bg)] hover:text-[var(--sf-text-main)] rounded-xl border border-[var(--sf-border)] transition-all flex items-center shrink-0">
-              ← Volver
-            </Link>
+            <BackButton href="/purchases/documents" />
             
             <div>
               <h1 className="text-2xl font-heading font-bold text-[var(--sf-text-main)] flex items-center gap-3">
@@ -220,39 +223,63 @@ export default function DocumentShow({ document, products = [], available_invoic
 
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-start sm:justify-end mt-2 sm:mt-0">
             {document.status === 'draft' && (
-              <button
-                onClick={() => {
-                  if (headerForm.isDirty) {
+              <>
+                <button
+                  onClick={() => {
                     Swal.fire({
+                      title: '¿Eliminar Borrador?',
+                      text: 'Esta acción no se puede deshacer y el borrador se perderá.',
                       icon: 'warning',
-                      title: 'Cambios sin guardar',
-                      text: 'Debes hacer clic en "Guardar Cambios" antes de emitir.'
+                      showCancelButton: true,
+                      confirmButtonText: 'Sí, eliminar',
+                      cancelButtonText: 'Cancelar',
+                      background: 'var(--sf-bg)',
+                      color: 'var(--sf-text-main)'
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        router.delete(`/purchases/documents/${document.id}`)
+                      }
                     })
-                    return
-                  }
-                  if (!document.document_number) {
-                    Swal.fire({
-                      icon: 'error',
-                      title: 'Falta N° de Folio',
-                      text: 'Debes guardar la cabecera con el número de folio antes de emitir.'
-                    })
-                    return
-                  }
-                  if (!document.purchase_order && (!document.purchase_document_items || document.purchase_document_items.length === 0)) {
-                    Swal.fire({
-                      icon: 'error',
-                      title: 'Documento vacío',
-                      text: 'Debes agregar al menos un producto antes de emitir.'
-                    })
-                    return
-                  }
-                  finalizeDocument()
-                }}
-                className={`px-5 py-2 text-sm text-white font-bold rounded-xl transition-colors shadow-lg flex items-center gap-2 ${headerForm.isDirty ? 'bg-indigo-400 opacity-50 cursor-not-allowed shadow-none' : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/25'}`}
-              >
-                <Send size={18} />
-                Emitir Documento
-              </button>
+                  }}
+                  className="px-5 py-2 text-sm text-red-500 bg-red-500/10 hover:bg-red-500/20 font-bold rounded-xl transition-colors flex items-center gap-2"
+                >
+                  <Trash2 size={18} />
+                  Eliminar Borrador
+                </button>
+                <button
+                  onClick={() => {
+                    if (headerForm.isDirty) {
+                      Swal.fire({
+                        icon: 'warning',
+                        title: 'Cambios sin guardar',
+                        text: 'Debes hacer clic en "Guardar Cambios" antes de emitir.'
+                      })
+                      return
+                    }
+                    if (!document.document_number) {
+                      Swal.fire({
+                        icon: 'error',
+                        title: 'Falta N° de Folio',
+                        text: 'Debes guardar la cabecera con el número de folio antes de emitir.'
+                      })
+                      return
+                    }
+                    if (!document.purchase_order && (!document.purchase_document_items || document.purchase_document_items.length === 0)) {
+                      Swal.fire({
+                        icon: 'error',
+                        title: 'Documento vacío',
+                        text: 'Debes agregar al menos un producto antes de emitir.'
+                      })
+                      return
+                    }
+                    finalizeDocument()
+                  }}
+                  className={`px-5 py-2 text-sm text-white font-bold rounded-xl transition-colors shadow-lg flex items-center gap-2 ${headerForm.isDirty ? 'bg-primary-400 opacity-50 cursor-not-allowed shadow-none' : 'bg-primary-500 hover:bg-primary-600 shadow-primary-500/25'}`}
+                >
+                  <Send size={18} />
+                  Emitir Documento
+                </button>
+              </>
             )}
             {document.status === 'pending' && (
               <button
@@ -285,12 +312,54 @@ export default function DocumentShow({ document, products = [], available_invoic
                   <form onSubmit={saveHeader} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
+                        <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Proveedor</label>
+                        <CustomSelect
+                          value={headerForm.data.supplier_id ? { 
+                            value: headerForm.data.supplier_id, 
+                            label: suppliers.find(s => s.id.toString() === headerForm.data.supplier_id?.toString())?.name || 'Seleccionar proveedor'
+                          } : null}
+                          onChange={(val: any) => headerForm.setData('supplier_id', val?.value || '')}
+                          options={suppliers.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.rut})` }))}
+                          placeholder="Sin proveedor (Compra Informal)"
+                          isDisabled={!!headerForm.data.purchase_order_id}
+                          isClearable
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Orden de Compra Asociada</label>
+                        <CustomSelect
+                          value={headerForm.data.purchase_order_id ? { 
+                            value: headerForm.data.purchase_order_id, 
+                            label: `Orden #${headerForm.data.purchase_order_id.toString().padStart(5, '0')} - ${purchase_orders.find(po => po.id.toString() === headerForm.data.purchase_order_id?.toString())?.supplier?.name || ''}` 
+                          } : null}
+                          onChange={(val: any) => {
+                            const po_id = val?.value || '';
+                            if (po_id) {
+                              const po = purchase_orders.find(po => po.id.toString() === po_id);
+                              headerForm.setData(data => ({
+                                ...data,
+                                purchase_order_id: po_id,
+                                supplier_id: po?.supplier_id?.toString() || ''
+                              }));
+                            } else {
+                              headerForm.setData('purchase_order_id', '');
+                            }
+                          }}
+                          options={purchase_orders.map(po => ({ 
+                            value: po.id.toString(), 
+                            label: `Orden #${po.id.toString().padStart(5, '0')} - ${po.supplier?.name}` 
+                          }))}
+                          placeholder="Ninguna"
+                          isClearable
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">N° de Folio</label>
                         <input
                           type="text"
                           value={headerForm.data.document_number}
                           onChange={e => headerForm.setData('document_number', e.target.value)}
-                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                           placeholder="Ej: 12345"
                           required
                         />
@@ -363,11 +432,17 @@ export default function DocumentShow({ document, products = [], available_invoic
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
                     <div>
                       <p className="text-sm text-[var(--sf-text-muted)]">Fecha Emisión</p>
-                      <p className="text-[var(--sf-text-main)] font-medium mt-1">{document.issue_date ? new Date(document.issue_date).toLocaleDateString('es-CL') : '-'}</p>
+                      <p className="text-[var(--sf-text-main)] font-medium mt-1 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[var(--sf-text-muted)]" />
+                        {document.issue_date ? new Date(document.issue_date).toLocaleDateString('es-CL') : '-'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-[var(--sf-text-muted)]">Fecha Vencimiento</p>
-                      <p className="text-[var(--sf-text-main)] font-medium mt-1">{document.due_date ? new Date(document.due_date).toLocaleDateString('es-CL') : '-'}</p>
+                      <p className="text-[var(--sf-text-main)] font-medium mt-1 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[var(--sf-text-muted)]" />
+                        {document.due_date ? new Date(document.due_date).toLocaleDateString('es-CL') : '-'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-[var(--sf-text-muted)]">Asociada a</p>
@@ -376,7 +451,7 @@ export default function DocumentShow({ document, products = [], available_invoic
                           Factura #{available_invoices.find((i: any) => i.id === document.reference_document_id)?.document_number || 'Asociada'} →
                         </Link>
                       ) : document.purchase_order ? (
-                        <Link href={`/purchases/orders/${document.purchase_order.id}`} className="inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 font-medium text-sm rounded-lg border border-indigo-500/20 mt-1 hover:bg-indigo-500/20 transition-colors">
+                        <Link href={`/purchases/orders/${document.purchase_order.id}`} className="inline-block px-3 py-1 bg-primary-500/10 text-primary-400 font-medium text-sm rounded-lg border border-primary-500/20 mt-1 hover:bg-primary-500/20 transition-colors">
                           Orden de Compra #{document.purchase_order.id} →
                         </Link>
                       ) : (
@@ -395,9 +470,9 @@ export default function DocumentShow({ document, products = [], available_invoic
                     <p className="text-sm text-[var(--sf-text-muted)] mb-1">IVA (19%)</p>
                     <p className="text-xl font-medium text-[var(--sf-text-main)]">{formatMoney(document.tax_amount)}</p>
                   </div>
-                  <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/30">
-                    <p className="text-sm text-indigo-400/80 font-bold mb-1">TOTAL FACTURA</p>
-                    <p className="text-2xl font-bold text-indigo-400">{formatMoney(document.total_amount)}</p>
+                  <div className="bg-primary-500/10 p-4 rounded-xl border border-primary-500/30">
+                    <p className="text-sm text-primary-400/80 font-bold mb-1">TOTAL FACTURA</p>
+                    <p className="text-2xl font-bold text-primary-400">{formatMoney(document.total_amount)}</p>
                   </div>
                 </div>
               </Card.Body>
@@ -411,9 +486,9 @@ export default function DocumentShow({ document, products = [], available_invoic
                 
                 {document.files && document.files.length > 0 ? (
                   <div className="flex flex-col items-center justify-center text-center p-6 border border-[var(--sf-border)] bg-[var(--sf-bg)] rounded-xl h-[250px]">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4 shadow-inner relative">
+                    <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-400 mb-4 shadow-inner relative">
                       <FileBadge2 className="w-8 h-8" />
-                      <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                      <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
                         {document.files.length}
                       </span>
                     </div>
@@ -422,16 +497,16 @@ export default function DocumentShow({ document, products = [], available_invoic
                     
                     <button
                       onClick={() => setIsFilesModalOpen(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/25"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25"
                     >
                       Gestionar Archivos <ExternalLink size={16} />
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-[var(--sf-border)] bg-[var(--sf-bg)] rounded-xl h-[250px] transition-colors hover:border-indigo-500/50">
+                  <div className="flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-[var(--sf-border)] bg-[var(--sf-bg)] rounded-xl h-[250px] transition-colors hover:border-primary-500/50">
                     <div className="w-16 h-16 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-border)] flex items-center justify-center text-[var(--sf-text-muted)] mb-4">
                       {isUploading ? (
-                        <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full" />
+                        <div className="animate-spin w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full" />
                       ) : (
                         <Upload className="w-6 h-6" />
                       )}
@@ -494,9 +569,16 @@ export default function DocumentShow({ document, products = [], available_invoic
                         {formatMoney(parseFloat(item.unit_price))}
                       </Table.Td>
                       <Table.Td>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${item.has_iva ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
-                          {item.has_iva ? '19%' : 'Exento'}
-                        </span>
+                        {item.has_iva ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-[var(--sf-text-main)]">{formatMoney(parseFloat(item.tax_amount))}</span>
+                            <span className="text-[10px] text-[var(--sf-text-muted)]">19% IVA</span>
+                          </div>
+                        ) : (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                            Exento
+                          </span>
+                        )}
                       </Table.Td>
                       <Table.Td className="text-emerald-400 font-medium text-right">
                         {formatMoney(parseFloat(item.total))}
@@ -515,7 +597,7 @@ export default function DocumentShow({ document, products = [], available_invoic
             <div className="lg:col-span-1">
               {document.status === 'draft' && (
                 <Card>
-                  <Card.Body className={editingItemId ? 'bg-indigo-500/5 ring-1 ring-indigo-500/30 rounded-xl' : ''}>
+                  <Card.Body className={editingItemId ? 'bg-primary-500/5 ring-1 ring-primary-500/30 rounded-xl' : ''}>
                     <h3 className="text-lg font-semibold text-[var(--sf-text-main)] border-b border-[var(--sf-border)] pb-3 mb-4">
                       {editingItemId ? 'Editar Producto' : 'Agregar Producto'}
                     </h3>
@@ -539,7 +621,7 @@ export default function DocumentShow({ document, products = [], available_invoic
                             required
                             value={newItem.quantity}
                             onChange={e => setNewItem({ ...newItem, quantity: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50 outline-none"
+                            className="w-full px-4 py-2.5 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50 outline-none"
                           />
                         </div>
                         <div>
@@ -573,7 +655,7 @@ export default function DocumentShow({ document, products = [], available_invoic
                         )}
                         <button
                           type="submit"
-                          className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                          className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
                         >
                           <Send size={18} />
                           {editingItemId ? 'Guardar Cambios' : 'Agregar a Factura'}
@@ -621,9 +703,16 @@ export default function DocumentShow({ document, products = [], available_invoic
                             {formatMoney(parseFloat(item.unit_price))}
                           </Table.Td>
                           <Table.Td>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${item.has_iva ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
-                              {item.has_iva ? '19%' : 'Exento'}
-                            </span>
+                            {item.has_iva ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-[var(--sf-text-main)]">{formatMoney(parseFloat(item.tax_amount))}</span>
+                                <span className="text-[10px] text-[var(--sf-text-muted)]">19% IVA</span>
+                              </div>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                                Exento
+                              </span>
+                            )}
                           </Table.Td>
                           <Table.Td className="text-emerald-400 font-medium text-right">
                             {formatMoney(parseFloat(item.total))}
@@ -632,7 +721,7 @@ export default function DocumentShow({ document, products = [], available_invoic
                             <Table.Td className="text-right">
                               <button
                                 onClick={() => handleEditItem(item)}
-                                className="p-2 text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors mr-1"
+                                className="p-2 text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors mr-1"
                                 title="Editar"
                               >
                                 <Pencil size={18} />
@@ -663,7 +752,7 @@ export default function DocumentShow({ document, products = [], available_invoic
           <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             <div className="flex justify-between items-center p-5 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
               <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <FileBadge2 className="w-5 h-5 text-indigo-400" />
+                <FileBadge2 className="w-5 h-5 text-primary-400" />
                 Archivos Adjuntos
               </h3>
               <button onClick={() => setIsFilesModalOpen(false)} className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-colors">
@@ -673,14 +762,14 @@ export default function DocumentShow({ document, products = [], available_invoic
             
             <div className="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
               {document.files && document.files.map((f: any) => (
-                <div key={f.id} className="flex items-center justify-between p-4 border border-[var(--sf-border)] bg-[var(--sf-surface)] rounded-xl hover:border-indigo-500/30 transition-colors">
+                <div key={f.id} className="flex items-center justify-between p-4 border border-[var(--sf-border)] bg-[var(--sf-surface)] rounded-xl hover:border-primary-500/30 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400">
+                    <div className="p-2.5 bg-primary-500/10 rounded-xl text-primary-400">
                       <FileBadge2 className="w-6 h-6" />
                     </div>
                     <div className="overflow-hidden">
                       <p className="font-medium text-[var(--sf-text-main)] text-sm max-w-[200px] sm:max-w-[250px] truncate" title={f.filename}>{f.filename}</p>
-                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-1 font-medium">
+                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-400 hover:underline flex items-center gap-1 mt-1 font-medium">
                         Abrir documento <ExternalLink size={12} />
                       </a>
                     </div>
@@ -723,7 +812,7 @@ export default function DocumentShow({ document, products = [], available_invoic
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
               >
                 {isUploading ? (
                   <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />

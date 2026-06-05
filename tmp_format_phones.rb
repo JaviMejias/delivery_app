@@ -2,7 +2,7 @@ require_relative 'config/environment'
 
 puts "Formateando Telefonos..."
 
-[Supplier, Driver].each do |klass|
+[ Supplier, Driver ].each do |klass|
   puts "Procesando #{klass.name}..."
   klass.find_each do |record|
     record.valid? # triggers before_validation clean_phone

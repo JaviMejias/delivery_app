@@ -23,12 +23,12 @@ class ProcessInventoryAdjustmentService
         item_type: @item_type,
         item_id: @item_id
       )
-      
+
       current_qty = inventory.quantity || 0
       new_qty = current_qty + @quantity_change
-      
+
       raise "La cantidad resultante no puede ser negativa" if new_qty < 0
-      
+
       inventory.quantity = new_qty
       inventory.save!
 
@@ -44,7 +44,7 @@ class ProcessInventoryAdjustmentService
         reference: @user # User performing the adjustment
       )
     end
-    
+
     true
   rescue => e
     Rails.logger.error "Error in ProcessInventoryAdjustmentService: #{e.message}"
@@ -58,9 +58,9 @@ class ProcessInventoryAdjustmentService
   end
 
   def item
-    @item ||= if @item_type == 'Product'
+    @item ||= if @item_type == "Product"
       @company.products.find_by(id: @item_id)
-    elsif @item_type == 'Material'
+    elsif @item_type == "Material"
       @company.materials.find_by(id: @item_id)
     end
   end

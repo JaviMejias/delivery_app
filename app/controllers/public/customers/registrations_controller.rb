@@ -1,5 +1,5 @@
 class Public::Customers::RegistrationsController < Devise::RegistrationsController
-  layout 'public'
+  layout "public"
   before_action :find_company_by_slug
   before_action :configure_permitted_parameters, if: :devise_controller?
 
@@ -49,12 +49,12 @@ class Public::Customers::RegistrationsController < Devise::RegistrationsControll
   protected
 
   def configure_permitted_parameters
-    devise_parameter_sanitizer.permit(:sign_up, keys: [:first_name, :last_name, :phone, :email, :address, :latitude, :longitude])
+    devise_parameter_sanitizer.permit(:sign_up, keys: [ :first_name, :last_name, :phone, :email, :address, :latitude, :longitude ])
   end
 
   def find_company_by_slug
     @company = Company.find_by!(slug: params[:company_slug])
   rescue ActiveRecord::RecordNotFound
-    render plain: 'Empresa no encontrada', status: :not_found
+    render plain: "Empresa no encontrada", status: :not_found
   end
 end

@@ -2,13 +2,13 @@ class Public::CustomerOrdersController < ApplicationController
   skip_before_action :verify_authenticity_token
   skip_before_action :authenticate_user!, raise: false
   skip_before_action :require_admin!, raise: false
-  before_action :find_company_by_slug, only: [:new, :create, :show, :history]
+  before_action :find_company_by_slug, only: [ :new, :create, :show, :history ]
 
-  layout 'public'
+  layout "public"
 
   def new
     brands_with_products = Public::CustomerOrders::FetchNewOrderDataService.call(@company)
-    
+
     addresses = []
     if current_public_order_customer
       addresses = current_public_order_customer.customer_addresses.order(is_default: :desc, created_at: :desc)
@@ -29,7 +29,7 @@ class Public::CustomerOrdersController < ApplicationController
       end
     end
 
-    render inertia: 'Public/Order/New', props: {
+    render inertia: "Public/Order/New", props: {
       company: @company.slice(:id, :slug, :name, :address, :phone).merge({
         company_phones: @company.company_phones.map { |p| { id: p.id, number: p.number, label: p.label } }
       }),
@@ -46,7 +46,7 @@ class Public::CustomerOrdersController < ApplicationController
     order_params = params
     if current_public_order_customer
       if current_public_order_customer.cancellations_in_last_24h >= 3
-        render json: { success: false, errors: ['Has excedido el límite de 3 cancelaciones en las últimas 24 horas. Por favor comunícate con soporte.'] }, status: :unprocessable_entity
+        render json: { success: false, errors: [ "Has excedido el límite de 3 cancelaciones en las últimas 24 horas. Por favor comunícate con soporte." ] }, status: :unprocessable_entity
         return
       end
 
@@ -71,7 +71,7 @@ class Public::CustomerOrdersController < ApplicationController
         )
       end
     end
-    
+
     result = Public::CustomerOrders::CreateOrderService.call(@company, order_params)
 
     if result[:success]
@@ -85,14 +85,14 @@ class Public::CustomerOrdersController < ApplicationController
     @order = CustomerOrder.find_by(order_token: params[:token])
     unless @order
       respond_to do |format|
-        format.html { redirect_to public_order_new_path(@company.slug), alert: 'Pedido no encontrado' }
-        format.json { render json: { error: 'Pedido no encontrado' }, status: :not_found }
+        format.html { redirect_to public_order_new_path(@company.slug), alert: "Pedido no encontrado" }
+        format.json { render json: { error: "Pedido no encontrado" }, status: :not_found }
       end
       return
     end
     if @order.completed? || @order.cancelled?
       respond_to do |format|
-        format.html { redirect_to public_order_new_path(@company.slug), notice: @order.completed? ? '¡Tu pedido fue entregado! Puedes hacer un nuevo pedido cuando quieras.' : 'Este pedido fue cancelado.' }
+        format.html { redirect_to public_order_new_path(@company.slug), notice: @order.completed? ? "¡Tu pedido fue entregado! Puedes hacer un nuevo pedido cuando quieras." : "Este pedido fue cancelado." }
         format.json { render json: { expired: true, status: @order.status }, status: :gone }
       end
       return
@@ -102,7 +102,7 @@ class Public::CustomerOrdersController < ApplicationController
 
     respond_to do |format|
       format.html do
-        render inertia: 'Public/Tracking', props: {
+        render inertia: "Public/Tracking", props: {
           company: @company.slice(:id, :slug, :name, :address, :phone),
           order: order_data,
           current_customer: current_public_order_customer ? current_public_order_customer.slice(:id, :first_name).merge(
@@ -128,15 +128,15 @@ class Public::CustomerOrdersController < ApplicationController
     orders = CustomerOrder.where(customer_id: current_public_order_customer.id)
                           .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
                           .order(created_at: :desc)
-    
+
     @pagy, paginated_orders = pagy(orders, limit: 10)
-    
-    render inertia: 'Public/Order/History', props: {
+
+    render inertia: "Public/Order/History", props: {
       company: @company.slice(:id, :slug, :name),
       current_customer: current_public_order_customer.slice(:id, :first_name, :last_name).merge(
         cancellations_in_last_24h: current_public_order_customer.cancellations_in_last_24h
       ),
-      orders: paginated_orders.as_json(only: [:id, :order_token, :status, :created_at, :details, :total_price]),
+      orders: paginated_orders.as_json(only: [ :id, :order_token, :status, :created_at, :details, :total_price ]),
       pagination: extract_pagy(@pagy),
       filters: { month: month, year: year }
     }
@@ -144,19 +144,28 @@ class Public::CustomerOrdersController < ApplicationController
 
   def cancel
     unless current_public_order_customer
-      render json: { error: 'No autorizado' }, status: :unauthorized
+      render json: { error: "No autorizado" }, status: :unauthorized
       return
     end
 
     @order = CustomerOrder.find_by(id: params[:id], customer_id: current_public_order_customer.id)
-    
+
     if @order.nil?
-      render json: { error: 'Pedido no encontrado' }, status: :not_found
+      render json: { error: "Pedido no encontrado" }, status: :not_found
     elsif @order.pending?
       @order.update(status: :cancelled)
-      render json: { success: true, message: 'Pedido cancelado correctamente' }
+      
+      Notification.create!(
+        company_id: @order.company_id,
+        title: "Pedido Cancelado por Cliente",
+        message: "El cliente #{@order.client_name} ha cancelado su pedido.",
+        notification_type: "danger",
+        action_url: "/trucks/map"
+      )
+
+      render json: { success: true, message: "Pedido cancelado correctamente" }
     else
-      render json: { error: 'No se puede cancelar un pedido que ya está en proceso' }, status: :unprocessable_entity
+      render json: { error: "No se puede cancelar un pedido que ya está en proceso" }, status: :unprocessable_entity
     end
   end
 
@@ -164,17 +173,17 @@ class Public::CustomerOrdersController < ApplicationController
 
   def find_company_by_slug
     @company = Company.find_by!(slug: params[:company_slug])
-    
+
     unless @company.enable_public_orders?
       respond_to do |format|
-        format.html { render plain: 'Esta empresa no tiene habilitado el portal de pedidos públicos.', status: :not_found }
-        format.json { render json: { error: 'Servicio no disponible para esta empresa' }, status: :not_found }
+        format.html { render plain: "Esta empresa no tiene habilitado el portal de pedidos públicos.", status: :not_found }
+        format.json { render json: { error: "Servicio no disponible para esta empresa" }, status: :not_found }
       end
     end
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
-      format.html { render plain: 'Empresa no encontrada', status: :not_found }
-      format.json { render json: { error: 'Empresa no encontrada' }, status: :not_found }
+      format.html { render plain: "Empresa no encontrada", status: :not_found }
+      format.json { render json: { error: "Empresa no encontrada" }, status: :not_found }
     end
   end
 end

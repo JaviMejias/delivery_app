@@ -20,7 +20,7 @@ class UpdateProductPricesForDynamicLists < ActiveRecord::Migration[8.1]
 
   def down
     add_column :product_prices, :channel, :integer
-    
+
     ProductPrice.joins(:price_list).find_each do |pp|
       case pp.price_list.code
       when 'warehouse' then pp.update_columns(channel: 0)

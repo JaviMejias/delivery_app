@@ -1,7 +1,9 @@
-import { Head, useForm } from '@inertiajs/react'
+import { Head, useForm, usePage } from '@inertiajs/react'
 import { FormEvent } from 'react'
+import { CustomSwitch } from '@/components/CustomSwitch'
 
 export default function Login() {
+  const { app_name } = usePage().props as any
   const { data, setData, post, processing, errors, transform } = useForm({
     email: '',
     password: '',
@@ -9,12 +11,23 @@ export default function Login() {
   })
 
   transform((data) => ({
-    user: data
+    user: {
+      email: data.email,
+      password: data.password,
+      remember_me: data.remember ? '1' : '0'
+    }
   }))
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     post('/login')
+  }
+
+  const getInitials = (name: string) => {
+    if (!name) return 'SF'
+    const words = name.trim().split(/\s+/)
+    if (words.length === 1) return name.substring(0, 2).toUpperCase()
+    return (words[0][0] + words[1][0]).toUpperCase()
   }
 
   return (
@@ -24,18 +37,18 @@ export default function Login() {
       <div className="min-h-screen bg-[var(--sf-bg)] flex items-center justify-center px-4">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
         </div>
 
         <div className="relative w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[var(--sf-text-main)] font-bold text-2xl mx-auto shadow-lg shadow-indigo-500/25">
-              SF
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-[var(--sf-text-main)] font-bold text-2xl mx-auto shadow-lg shadow-primary-500/25">
+              {getInitials(app_name)}
             </div>
-            <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-              StockFlow
+            <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-primary-400 to-purple-400 bg-clip-text text-transparent">
+              {app_name}
             </h1>
             <p className="mt-2 text-[var(--sf-text-muted)]">
               Gestión de inventario inteligente
@@ -61,7 +74,7 @@ export default function Login() {
                   onChange={(e) => setData('email', e.target.value)}
                   className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl
                     text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)]
-                    focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500
+                    focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
                     transition-all duration-200"
                   placeholder="tu@email.com"
                   autoComplete="email"
@@ -84,7 +97,7 @@ export default function Login() {
                   onChange={(e) => setData('password', e.target.value)}
                   className="w-full px-4 py-3 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl
                     text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)]
-                    focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500
+                    focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
                     transition-all duration-200"
                   placeholder="••••••••"
                   autoComplete="current-password"
@@ -96,31 +109,25 @@ export default function Login() {
               </div>
 
               {/* Remember me */}
-              <div className="flex items-center gap-2">
-                <input
-                  id="remember"
-                  type="checkbox"
+              <div className="flex items-center gap-3 pt-2">
+                <CustomSwitch
                   checked={data.remember}
-                  onChange={(e) => setData('remember', e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--sf-border)] bg-[var(--sf-bg)]
-                    text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-0"
+                  onChange={(v) => setData('remember', v)}
                 />
-                <label htmlFor="remember" className="text-sm text-[var(--sf-text-muted)]">
-                  Recordarme
-                </label>
+                <span className="text-sm text-[var(--sf-text-muted)] font-medium">Recordarme</span>
               </div>
 
               {/* Submit */}
               <button
                 type="submit"
                 disabled={processing}
-                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600
-                  hover:from-indigo-600 hover:to-purple-700
+                className="w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-purple-600
+                  hover:from-primary-600 hover:to-purple-700
                   text-[var(--sf-text-main)] font-medium rounded-xl
                   transition-all duration-200
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:ring-offset-2 focus:ring-offset-[var(--sf-dark-card)]
+                  focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-[var(--sf-dark-card)]
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+                  shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40"
               >
                 {processing ? (
                   <span className="flex items-center justify-center gap-2">

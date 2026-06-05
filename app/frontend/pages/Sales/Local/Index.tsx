@@ -1,13 +1,18 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Head, Link } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Pagination from '@/components/Pagination'
-import SearchBar from '@/components/SearchBar'
+import Table from '@/components/Table'
+import { TableFilters } from '@/components/TableFilters'
 import { CustomDatePicker } from '@/components/CustomDatePicker'
 import { router } from '@inertiajs/react'
 import { Store, Printer, XCircle } from 'lucide-react'
 import BoletaTicket from '@/components/BoletaTicket'
+import { formatCLP } from '@/utils/formatters'
+import { useExcelExport } from '@/hooks/useExcelExport'
+import { PaymentBreakdownBadge } from '@/components/Badges/PaymentBreakdownBadge'
 
 interface Product {
   id: number
@@ -43,9 +48,7 @@ interface Props {
   currentSearch?: string
 }
 
-const formatCLP = (amount: number | string) => {
-  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(amount))
-}
+
 
 export default function LocalSalesIndex({ sales, pagination, currentSearch }: Props) {
   const today = new Date();
@@ -58,9 +61,30 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
 
   const [startDate, setStartDate] = useState(new URLSearchParams(window.location.search).get('start_date') || formatDate(firstDay))
   const [endDate, setEndDate] = useState(new URLSearchParams(window.location.search).get('end_date') || formatDate(today))
+  const [search, setSearch] = useState(currentSearch || '')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const applyFilters = () => {
+    setIsLoading(true)
+    const url = new URL(window.location.href);
+    if (search) url.searchParams.set('search', search); else url.searchParams.delete('search');
+    if (startDate) url.searchParams.set('start_date', startDate); else url.searchParams.delete('start_date');
+    if (endDate) url.searchParams.set('end_date', endDate); else url.searchParams.delete('end_date');
+    router.get(url.pathname + url.search, {}, { 
+      preserveState: true,
+      onFinish: () => setIsLoading(false)
+    })
+  }
 
   const [selectedSaleForTicket, setSelectedSaleForTicket] = useState<LocalSale | null>(null)
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm')
+
+  const pageTotal = sales.reduce((acc, sale) => acc + parseFloat(sale.total_revenue || '0'), 0)
+  const pageCash = sales.reduce((acc, sale) => acc + parseFloat(sale.cash_revenue || '0'), 0)
+  const pageCard = sales.reduce((acc, sale) => acc + parseFloat(sale.card_revenue || '0'), 0)
+  const pageTransfer = sales.reduce((acc, sale) => acc + parseFloat(sale.transfer_revenue || '0'), 0)
+
+  const { getThemeName, handleExcelClick } = useExcelExport();
 
   return (
     <AuthenticatedLayout>
@@ -75,106 +99,93 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
         >
         <div className="flex gap-3">
           <Link
-            href="/sales/local/closures"
-            className="px-5 py-2.5 bg-[var(--sf-bg)] text-[var(--sf-text-main)] font-medium rounded-xl border border-[var(--sf-border)] hover:bg-[var(--sf-surface)] transition-colors flex items-center gap-2"
-          >
-            🔒 Cierres de Caja
-          </Link>
-          <Link
             href="/sales/local/pos"
-            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-[var(--sf-text-main)] font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-colors shadow-lg shadow-emerald-500/25 flex items-center gap-2"
+            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-[var(--sf-text-main)] font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-colors shadow-lg shadow-primary-500/25 flex items-center gap-2"
           >
             🛒 Abrir Punto de Venta
           </Link>
         </div>
         </PageHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-[var(--sf-surface)] border border-[var(--sf-border)] p-4 rounded-xl gap-4 flex-wrap">
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            <SearchBar routeName="/sales/local" currentSearch={currentSearch || ""} placeholder="Buscar por ID o Bodega..." />
+        <TableFilters onApply={applyFilters} isLoading={isLoading}>
+          <TableFilters.Search
+            value={search}
+            onChange={setSearch}
+            onSearch={applyFilters}
+            placeholder="Buscar por ID o Bodega..."
+            className="w-full sm:w-96"
+          />
+          <TableFilters.Date
+            label="Desde"
+            value={startDate}
+            onChange={setStartDate}
+          />
+          <TableFilters.Date
+            label="Hasta"
+            value={endDate}
+            onChange={setEndDate}
+          />
+          <div className="flex items-center ml-2 border-l border-[var(--sf-border)] pl-4">
+            <a 
+              href={`/sales/local?format=xlsx&search=${search || ''}&start_date=${startDate}&end_date=${endDate}`} 
+              onClick={handleExcelClick} 
+              className="px-4 py-2 text-sm font-medium bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-lg hover:bg-[var(--sf-surface)] text-[var(--sf-text-main)] transition-colors h-[42px] flex items-center justify-center"
+            >
+              ⬇️ EXCEL
+            </a>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-sm text-[var(--sf-text-muted)] min-w-[50px] sm:min-w-0">Desde:</span>
-                <div className="flex-1 sm:w-36">
-                  <CustomDatePicker value={startDate} onChange={(val) => {
-                    setStartDate(val)
-                    const url = new URL(window.location.href);
-                    if (val) url.searchParams.set('start_date', val); else url.searchParams.delete('start_date');
-                    router.get(url.pathname + url.search, {}, { preserveState: true });
-                  }} />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-sm text-[var(--sf-text-muted)] min-w-[50px] sm:min-w-0">Hasta:</span>
-                <div className="flex-1 sm:w-36">
-                  <CustomDatePicker value={endDate} onChange={(val) => {
-                    setEndDate(val)
-                    const url = new URL(window.location.href);
-                    if (val) url.searchParams.set('end_date', val); else url.searchParams.delete('end_date');
-                    router.get(url.pathname + url.search, {}, { preserveState: true });
-                  }} />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 shrink-0 sm:border-l border-[var(--sf-border)] sm:pl-4 w-full sm:w-auto mt-1 sm:mt-0">
-              <a href={`/sales/local?format=xlsx&search=${currentSearch || ''}&start_date=${startDate}&end_date=${endDate}`} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-4 py-2 text-sm font-medium bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-lg hover:bg-[var(--sf-surface)] text-[var(--sf-text-main)] transition-colors text-center">
-                ⬇️ EXCEL
-              </a>
-            </div>
-          </div>
-        </div>
+        </TableFilters>
         <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[var(--sf-bg)] text-[var(--sf-text-muted)] border-b border-[var(--sf-border)]">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Código</th>
-                  <th className="px-6 py-4 font-medium">Bodega</th>
-                  <th className="px-6 py-4 font-medium">Fecha</th>
-                  <th className="px-6 py-4 font-medium">Detalle de Venta</th>
-                  <th className="px-6 py-4 font-medium text-right">Desglose de Pago</th>
-                  <th className="px-6 py-4 font-medium text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--sf-dark-border)]">
-                {sales.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-[var(--sf-text-muted)]">
-                      <div className="text-4xl mb-3 opacity-50">🏪</div>
-                      No hay ventas locales registradas en este período.
-                    </td>
-                  </tr>
-                ) : (
-                  sales.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-[var(--sf-bg)]/50 transition-colors">
-                      <td className="px-6 py-4 align-top">
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Código</Table.Th>
+                <Table.Th className="hidden md:table-cell">Bodega</Table.Th>
+                <Table.Th className="hidden md:table-cell">Fecha</Table.Th>
+                <Table.Th>Detalle de Venta</Table.Th>
+                <Table.Th className="text-right hidden lg:table-cell">Desglose de Pago</Table.Th>
+                <Table.Th className="text-right">Total</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {sales.length === 0 ? (
+                <Table.Empty 
+                  title="No hay ventas locales" 
+                  description="No se encontraron ventas registradas en este período." 
+                  colSpan={6} 
+                />
+              ) : (
+                sales.map((sale) => (
+                  <Table.Tr key={sale.id}>
+                    <Table.Td className="align-top">
                         <div className="font-bold text-[var(--sf-text-main)] text-lg">VTA-{sale.id.toString().padStart(4, '0')}</div>
-                        <div className="mt-1 text-[10px] uppercase text-indigo-400 font-bold mb-2">
+                        <div className="mt-1 text-[10px] uppercase text-primary-400 font-bold mb-2">
                           {sale.sale_type === 'warehouse' ? 'P. Bodega' : 'P. Mayorista'}
                         </div>
                         <button 
                           onClick={() => setSelectedSaleForTicket(sale)} 
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-medium rounded-lg transition-colors text-xs"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-medium rounded-lg transition-colors text-xs"
                         >
                           <Printer size={14} /> Ver Ticket
                         </button>
-                      </td>
-                      <td className="px-6 py-4 align-top">
+                        
+                        <div className="md:hidden mt-3 text-xs text-[var(--sf-text-muted)] space-y-1">
+                           <p>Bodega: {sale.warehouse.name}</p>
+                           <p>Fecha: {sale.date.split('-').reverse().join('-')}</p>
+                        </div>
+                      </Table.Td>
+                      <Table.Td className="align-top hidden md:table-cell">
                         <span className="inline-block px-2.5 py-1 rounded-md bg-[var(--sf-bg)] border border-[var(--sf-border)] text-xs text-[var(--sf-text-muted)]">
                           {sale.warehouse.name}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 align-top">
+                      </Table.Td>
+                      <Table.Td className="align-top hidden md:table-cell">
                         <div className="text-sm text-[var(--sf-text-main)]">{sale.date.split('-').reverse().join('-')}</div>
-                      </td>
-                      <td className="px-6 py-4 align-top">
-                        <div className="space-y-2">
+                      </Table.Td>
+                      <Table.Td className="align-top">
+                        <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar pr-2">
                           {sale.local_sale_items.map(item => (
                             <div key={item.id} className="text-xs">
-                              <span className="font-bold text-indigo-400">{item.quantity}x</span>{' '}
+                              <span className="font-bold text-primary-400">{item.quantity}x</span>{' '}
                               <span className="text-[var(--sf-text-main)]">{item.product.name}</span>
                               {item.returned_empty_quantity > 0 && (
                                 <span className="text-[var(--sf-text-muted)] ml-2">
@@ -189,34 +200,62 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
                             </div>
                           ))}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 align-top text-right text-xs text-[var(--sf-text-muted)]">
-                        {parseFloat(sale.cash_revenue) > 0 && <div>Efectivo: <span className="text-emerald-400 font-medium">{formatCLP(sale.cash_revenue)}</span></div>}
-                        {parseFloat(sale.card_revenue) > 0 && <div>Tarjeta: <span className="text-blue-400 font-medium">{formatCLP(sale.card_revenue)}</span></div>}
-                        {parseFloat(sale.transfer_revenue) > 0 && <div>Transf: <span className="text-purple-400 font-medium">{formatCLP(sale.transfer_revenue)}</span></div>}
-                      </td>
-                      <td className="px-6 py-4 align-top text-right font-black text-emerald-400 text-lg">
+                      </Table.Td>
+                      <Table.Td className="align-top text-right text-xs text-[var(--sf-text-muted)] hidden lg:table-cell">
+                        <PaymentBreakdownBadge 
+                          cashAmount={sale.cash_revenue}
+                          cardAmount={sale.card_revenue}
+                          transferAmount={sale.transfer_revenue}
+                          className="items-end"
+                        />
+                      </Table.Td>
+                      <Table.Td className="align-top text-right font-black text-emerald-400 text-lg">
                         {formatCLP(sale.total_revenue)}
-                      </td>
-                    </tr>
+                      </Table.Td>
+                    </Table.Tr>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)]">
-            <Pagination pagination={pagination} />
-          </div>
+                {sales.length > 0 && (
+                  <Table.Tr className="bg-primary-500/5 border-t-2 border-primary-500/20">
+                    <Table.Td colSpan={4} className="text-right font-bold text-primary-400 py-4 hidden lg:table-cell">
+                      TOTALES VISIBLES:
+                    </Table.Td>
+                    <Table.Td colSpan={2} className="text-right font-bold text-primary-400 py-4 md:hidden">
+                      TOTALES:
+                    </Table.Td>
+                    <Table.Td colSpan={3} className="text-right font-bold text-primary-400 py-4 hidden md:table-cell lg:hidden">
+                      TOTALES:
+                    </Table.Td>
+                    <Table.Td className="text-right align-top hidden lg:table-cell">
+                      <PaymentBreakdownBadge 
+                        cashAmount={pageCash}
+                        cardAmount={pageCard}
+                        transferAmount={pageTransfer}
+                        className="items-end font-bold"
+                      />
+                    </Table.Td>
+                    <Table.Td className="text-right text-lg font-black text-primary-500 align-middle">
+                      {formatCLP(pageTotal)}
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+              </Table.Tbody>
+            </Table>
+            {pagination && pagination.pages > 1 && (
+              <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)]">
+                <Pagination pagination={pagination} />
+              </div>
+            )}
         </div>
       </div>
 
       {/* Modal for Boleta Ticket */}
-      {selectedSaleForTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
+      {selectedSaleForTicket && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col my-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+            <div className="flex flex-wrap justify-between items-center gap-4 p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
               <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <Printer className="w-5 h-5 text-indigo-400" />
+                <Printer className="w-5 h-5 text-primary-400" />
                 Ticket de Venta
               </h3>
               
@@ -224,13 +263,13 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
                 <div className="flex bg-[var(--sf-bg)] rounded-lg p-1 border border-[var(--sf-border)]">
                   <button
                     onClick={() => setPaperSize('80mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-indigo-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
                   >
                     80mm
                   </button>
                   <button
                     onClick={() => setPaperSize('58mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-indigo-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
                   >
                     58mm
                   </button>
@@ -255,14 +294,15 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
               >
                 <Printer size={18} />
                 Imprimir Ticket
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </AuthenticatedLayout>
   )

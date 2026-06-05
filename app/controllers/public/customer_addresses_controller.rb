@@ -4,11 +4,11 @@ class Public::CustomerAddressesController < ApplicationController
   before_action :find_company_by_slug
   before_action :require_customer!
 
-  layout 'public'
+  layout "public"
 
   def index
     @addresses = current_public_order_customer.customer_addresses.order(is_default: :desc, created_at: :desc)
-    render inertia: 'Public/Order/Addresses', props: {
+    render inertia: "Public/Order/Addresses", props: {
       company: @company.slice(:id, :slug, :name, :address, :phone),
       current_customer: current_public_order_customer.slice(:id, :first_name, :last_name),
       addresses: @addresses
@@ -17,7 +17,7 @@ class Public::CustomerAddressesController < ApplicationController
 
   def create
     @address = current_public_order_customer.customer_addresses.build(address_params)
-    
+
     # If this is the first address or marked as default, make others not default
     if @address.is_default || current_public_order_customer.customer_addresses.count == 0
       @address.is_default = true
@@ -34,7 +34,7 @@ class Public::CustomerAddressesController < ApplicationController
   def destroy
     @address = current_public_order_customer.customer_addresses.find(params[:id])
     @address.destroy
-    redirect_to public_order_customer_addresses_path(company_slug: @company.slug), notice: 'Dirección eliminada'
+    redirect_to public_order_customer_addresses_path(company_slug: @company.slug), notice: "Dirección eliminada"
   end
 
   def update
@@ -50,7 +50,7 @@ class Public::CustomerAddressesController < ApplicationController
     @address = current_public_order_customer.customer_addresses.find(params[:id])
     current_public_order_customer.customer_addresses.update_all(is_default: false)
     @address.update(is_default: true)
-    redirect_to public_order_customer_addresses_path(company_slug: @company.slug), notice: 'Dirección principal actualizada'
+    redirect_to public_order_customer_addresses_path(company_slug: @company.slug), notice: "Dirección principal actualizada"
   end
 
   private
@@ -68,6 +68,6 @@ class Public::CustomerAddressesController < ApplicationController
   def find_company_by_slug
     @company = Company.find_by!(slug: params[:company_slug])
   rescue ActiveRecord::RecordNotFound
-    render plain: 'Empresa no encontrada', status: :not_found
+    render plain: "Empresa no encontrada", status: :not_found
   end
 end

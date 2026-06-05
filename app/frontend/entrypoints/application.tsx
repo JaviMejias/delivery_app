@@ -10,9 +10,11 @@ if (el && el.dataset.page) {
   initialPage = JSON.parse(el.dataset.page)
 }
 
+const appName = document.querySelector('meta[name="application-name"]')?.getAttribute('content') || 'StockFlow'
+
 createInertiaApp({
   page: initialPage,
-  title: (title) => title ? `${title} - StockFlow` : 'StockFlow',
+  title: (title) => title ? `${title} - ${appName}` : appName,
   resolve: (name) => {
       const page = pages[`../pages/${name}.tsx`]
       if (!page) {
@@ -22,6 +24,10 @@ createInertiaApp({
     },
     setup({ el, App, props }) {
       createRoot(el).render(<App {...props} />)
+    },
+    progress: {
+      color: '#6366f1',
+      showSpinner: true,
     },
 })
 

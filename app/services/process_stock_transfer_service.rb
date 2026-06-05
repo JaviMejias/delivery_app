@@ -5,7 +5,7 @@ class ProcessStockTransferService
   end
 
   def call
-    raise 'Esta transferencia ya fue completada.' if @transfer.completed?
+    raise "Esta transferencia ya fue completada." if @transfer.completed?
 
     ActiveRecord::Base.transaction do
       @transfer.stock_transfer_items.each do |t_item|

@@ -6,9 +6,10 @@ interface Props {
   onClose: () => void
   title: string
   children: React.ReactNode
+  maxWidth?: string
 }
 
-export default function Modal({ show, onClose, title, children }: Props) {
+export default function Modal({ show, onClose, title, children, maxWidth = "max-w-lg" }: Props) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function Modal({ show, onClose, title, children }: Props) {
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className={`relative w-full ${maxWidth} bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200`}>
         <div className="flex items-center justify-between p-6 border-b border-[var(--sf-border)]">
           <h2 className="text-xl font-semibold text-[var(--sf-text-main)]">{title}</h2>
           <button

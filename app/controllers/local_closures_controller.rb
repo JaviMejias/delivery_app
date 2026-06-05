@@ -4,12 +4,41 @@ class LocalClosuresController < ApplicationController
   def index
     closures = LocalClosure.with_details.recent
 
-    pagy, records = pagy(:offset, closures, limit: 20)
+    if params[:search].present?
+      # Extract only digits for ID search
+      id_search = params[:search].gsub(/\D/, '')
+      closures = closures.where(id: id_search) if id_search.present?
+    end
 
-    render inertia: "Sales/Local/Closures/Index", props: {
-      closures: records.as_json(include: :warehouse),
-      pagination: extract_pagy(pagy)
-    }
+    if params[:warehouse_id].present?
+      closures = closures.where(warehouse_id: params[:warehouse_id])
+    end
+
+    # Defaults to current month if no dates provided
+    start_date = params[:start_date].presence || Date.today.beginning_of_month.to_s
+    end_date = params[:end_date].presence || Date.today.end_of_month.to_s
+
+    closures = closures.where(date: start_date..end_date)
+
+    if params[:format] == "xlsx"
+      send_data ExportLocalClosuresService.new(closures, params[:theme]).to_xlsx, filename: "cierres-caja-#{Date.today}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else
+      pagy, records = pagy(:offset, closures, limit: 20)
+
+      warehouses = Warehouse.where(company_id: current_tenant.id).active_warehouses.stationary
+
+      render inertia: "Sales/Local/Closures/Index", props: {
+        closures: records.as_json(include: :warehouse),
+        warehouses: warehouses,
+        filters: {
+          search: params[:search],
+          warehouse_id: params[:warehouse_id],
+          start_date: start_date,
+          end_date: end_date
+        },
+        pagination: extract_pagy(pagy)
+      }
+    end
   end
 
   def new

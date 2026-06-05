@@ -4,7 +4,7 @@ class PriceList < ApplicationRecord
   has_many :product_prices, dependent: :destroy
 
   validates :name, presence: true
-  validates :active, inclusion: { in: [true, false] }
-  validates :available_for_trucks, inclusion: { in: [true, false] }
-  validates :available_for_local, inclusion: { in: [true, false] }
+  validates :active, inclusion: { in: [ true, false ] }
+  validates :available_for_trucks, inclusion: { in: [ true, false ] }
+  validates :available_for_local, inclusion: { in: [ true, false ] }
 end

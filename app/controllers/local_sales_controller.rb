@@ -10,9 +10,10 @@ class LocalSalesController < ApplicationController
     end
 
     if params[:format] == "xlsx"
-      send_data ExportSalesService.new(sales).to_xlsx, filename: "ventas-#{Date.today}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      send_data ExportSalesService.new(sales, params[:theme]).to_xlsx, filename: "ventas-#{Date.today}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     else
-      pagy, records = pagy(:offset, sales, limit: 20)
+      sales_with_includes = sales.includes(:warehouse, local_sale_items: { product: [:material, :brand] })
+      pagy, records = pagy(:offset, sales_with_includes, limit: 20)
       index_data = FetchLocalSalesIndexDataService.call(records)
 
       render inertia: "Sales/Local/Index", props: {

@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Head, useForm, router, Link } from '@inertiajs/react'
-import Swal from 'sweetalert2'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import Modal from '@/components/Modal'
+import BackButton from '@/components/BackButton'
 import { CustomSelect } from '@/components/CustomSelect'
 import { CustomSwitch } from '@/components/CustomSwitch'
+import CurrencyInput from '@/components/CurrencyInput'
+import { Eye, Trash2 } from 'lucide-react'
+import { useExcelExport } from '@/hooks/useExcelExport'
+import { StatusBadge } from '@/components/Badges/StatusBadge'
 
 interface Material {
   id: number
@@ -72,6 +76,7 @@ interface Props {
 export default function PurchaseOrderShow({ order, products }: Props) {
   const isDraft = order.status === 'draft'
   const isReceived = order.status === 'received'
+  const hasActiveInvoice = order.purchase_documents && order.purchase_documents.some((d: any) => d.status !== 'voided');
   const [showReceiveModal, setShowReceiveModal] = useState(false)
 
   const itemForm = useForm({
@@ -111,6 +116,8 @@ export default function PurchaseOrderShow({ order, products }: Props) {
     })
   }
 
+  const { getThemeName } = useExcelExport()
+
   const confirmReceive = (e: React.FormEvent) => {
     e.preventDefault()
     receiveForm.post(`/purchases/orders/${order.id}/receive`, {
@@ -132,11 +139,9 @@ export default function PurchaseOrderShow({ order, products }: Props) {
       <Head title={`Orden #${order.id.toString().padStart(5, '0')}`} />
 
       <div className="space-y-6">
-        <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-l-4 border-l-indigo-500 mb-2">
+        <div className="glass-panel interactive-card p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-l-4 border-l-indigo-500 mb-2">
           <div className="flex items-center gap-4">
-            <Link href="/purchases/orders" className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-colors">
-              ← Volver
-            </Link>
+            <BackButton href="/purchases/orders" />
             <div>
               <h1 className="text-2xl font-heading font-bold text-[var(--sf-text-main)] flex items-center gap-3">
                 Orden #{order.id.toString().padStart(5, '0')}
@@ -155,8 +160,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
           <div className="flex gap-2 items-center">
             <a
               href={`/purchases/orders/${order.id}.pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={(e) => { e.preventDefault(); window.open(`/purchases/orders/${order.id}?format=pdf&theme=${getThemeName()}`, '_blank'); }}
               className="px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-main)] font-medium rounded-lg hover:bg-[var(--sf-surface)] transition-colors shadow-sm"
             >
               📄 PDF
@@ -169,7 +173,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                 Marcar como Recibida
               </button>
             )}
-            {isReceived && (
+            {isReceived && !hasActiveInvoice && (
               <button
                 onClick={() => {
                   router.post('/purchases/documents', {
@@ -178,7 +182,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                     status: 'draft'
                   })
                 }}
-                className="px-5 py-2 bg-indigo-500 text-[var(--sf-text-main)] font-medium rounded-lg hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25 flex items-center gap-2"
+                className="px-5 py-2 bg-primary-500 text-[var(--sf-text-main)] font-medium rounded-lg hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25 flex items-center gap-2"
               >
                 + Asociar Factura
               </button>
@@ -211,20 +215,17 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                           min="1"
                           value={itemForm.data.quantity}
                           onChange={e => itemForm.setData('quantity', e.target.value)}
-                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                           required
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1">Costo Unit. ($)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <CurrencyInput
                           value={itemForm.data.unit_price}
-                          onChange={e => itemForm.setData('unit_price', e.target.value)}
-                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
-                          required
+                          onValueChange={(val) => itemForm.setData('unit_price', val)}
+                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -239,7 +240,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                     <button
                       type="submit"
                       disabled={itemForm.processing}
-                      className="w-full py-2.5 mt-2 bg-indigo-500/10 text-indigo-400 font-medium rounded-xl border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
+                      className="w-full py-2.5 mt-2 bg-primary-500/10 text-primary-400 font-medium rounded-xl border border-primary-500/20 hover:bg-primary-500/20 transition-colors disabled:opacity-50"
                     >
                       + Agregar a la Orden
                     </button>
@@ -250,7 +251,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
           )}
 
           {/* Detalles de la Orden */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={isDraft ? "lg:col-span-2 space-y-6" : "lg:col-span-3 space-y-6"}>
             <Card className="overflow-hidden">
               <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-bg)]">
                 <h2 className="font-semibold text-[var(--sf-text-main)]">Ítems de la Orden</h2>
@@ -292,7 +293,7 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                         )}
                         <Table.Td className="text-[var(--sf-text-muted)]">${parseFloat(item.unit_price).toLocaleString()}</Table.Td>
                         <Table.Td>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${item.has_iva ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${item.has_iva ? 'bg-primary-500/10 text-primary-400 border-primary-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
                             {item.has_iva ? '19%' : 'Exento'}
                           </span>
                         </Table.Td>
@@ -304,7 +305,9 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                         </Table.Td>
                         {isDraft && (
                           <Table.Td className="text-right">
-                            <button onClick={() => deleteItem(item.id)} className="text-red-400 hover:text-red-300 text-xl leading-none">×</button>
+                            <button onClick={() => deleteItem(item.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar ítem">
+                              <Trash2 size={18} />
+                            </button>
                           </Table.Td>
                         )}
                       </Table.Tr>
@@ -366,13 +369,11 @@ export default function PurchaseOrderShow({ order, products }: Props) {
                           ${parseFloat(doc.total_amount).toLocaleString()}
                         </Table.Td>
                         <Table.Td>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${doc.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
-                            {doc.status === 'pending' ? 'Pendiente Pago' : 'Pagada'}
-                          </span>
+                          <StatusBadge status={doc.status} />
                         </Table.Td>
                         <Table.Td className="text-right">
-                          <Link href={`/purchases/documents/${doc.id}`} className="text-indigo-400 hover:text-indigo-300 font-medium text-sm">
-                            Ver Detalles →
+                          <Link href={`/purchases/documents/${doc.id}`} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg inline-block transition-colors" title="Ver Detalles">
+                            <Eye size={18} />
                           </Link>
                         </Table.Td>
                       </Table.Tr>

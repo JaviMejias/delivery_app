@@ -13,7 +13,7 @@ module Public
           customer_id: params[:customer_id],
           details: params[:details].permit!.to_h
         )
-        
+
         if order.save
           { success: true, order: order }
         else

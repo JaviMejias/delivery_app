@@ -32,9 +32,9 @@ const STATUS_CONFIG = {
   accepted: {
     label: '¡Pedido Aceptado!',
     sublabel: 'El camión está preparándose para partir',
-    color: 'text-indigo-400',
-    bg: 'bg-indigo-500/10 border-indigo-500/30',
-    icon: <Truck className="w-8 h-8 text-indigo-400" />,
+    color: 'text-primary-400',
+    bg: 'bg-primary-500/10 border-primary-500/30',
+    icon: <Truck className="w-8 h-8 text-primary-400" />,
     pulse: true,
   },
   in_transit: {
@@ -101,8 +101,11 @@ export default function PublicOrderTracking({ token, companyId }: Props) {
     if (!L || mapRef.current) return
     mapRef.current = L.map('tracking-map', { zoomControl: false }).setView([-33.4489, -70.6693], 13)
     L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      maxNativeZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+      className: 'map-dark-mode'
     }).addTo(mapRef.current)
   }
 
@@ -161,11 +164,11 @@ export default function PublicOrderTracking({ token, companyId }: Props) {
           lineRef.current.setLatLngs((orderData.truck as any).route_points)
         } else {
           lineRef.current = L.polyline((orderData.truck as any).route_points, {
-            color: '#10b981',
-            weight: 5,
-            opacity: 0.8,
-            dashArray: '10, 10',
-            lineJoin: 'round'
+            color: '#a855f7',
+            weight: 6,
+            opacity: 0.9,
+            lineJoin: 'round',
+            lineCap: 'round'
           }).addTo(mapRef.current)
         }
       } else {
@@ -323,6 +326,40 @@ export default function PublicOrderTracking({ token, companyId }: Props) {
             )}
 
             {/* --------------------- */}
+            {/* FLOATING CONTROLS     */}
+            {/* --------------------- */}
+            <div 
+              className={`absolute right-4 z-[50] flex flex-col gap-3 transition-all duration-500 ${
+                isTopExpanded ? 'top-64 opacity-0 pointer-events-none' : 'top-20 opacity-100'
+              }`}
+            >
+              {order.truck && (
+                <button 
+                  onClick={() => {
+                    if (mapRef.current && order.truck) {
+                      mapRef.current.flyTo([order.truck.latitude, order.truck.longitude], 16, { animate: true, duration: 1.0 })
+                    }
+                  }}
+                  className="w-12 h-12 rounded-full bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 text-emerald-400 shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-110 active:scale-95"
+                  title="Centrar en el camión"
+                >
+                  <Truck className="w-5 h-5" />
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  if (mapRef.current && (order as any).latitude) {
+                    mapRef.current.flyTo([(order as any).latitude, (order as any).longitude], 16, { animate: true, duration: 1.0 })
+                  }
+                }}
+                className="w-12 h-12 rounded-full bg-slate-900/90 backdrop-blur-xl border border-rose-500/30 text-rose-400 shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-110 active:scale-95"
+                title="Centrar en mi destino"
+              >
+                <MapPin className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* --------------------- */}
             {/* BOTTOM SHEET          */}
             {/* --------------------- */}
             <div 
@@ -372,7 +409,7 @@ export default function PublicOrderTracking({ token, companyId }: Props) {
                   <div>
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Detalle del Pedido</h3>
                     <div className="flex items-start gap-3 bg-slate-950/50 p-3 rounded-xl border border-white/5">
-                      <Package className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                      <Package className="w-4 h-4 text-primary-400 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-bold text-white leading-snug">{order.summary}</p>
                         <p className="text-xs text-slate-400 mt-1">{order.client_name}</p>

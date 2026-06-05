@@ -36,7 +36,7 @@ export default function CompanyTable({ companies, pagination, editingCompany, on
               </Table.Tr>
             ) : (
               companies.map((c) => (
-                <Table.Tr key={c.id} className={editingCompany?.id === c.id ? 'bg-indigo-500/5' : ''}>
+                <Table.Tr key={c.id} className={editingCompany?.id === c.id ? 'bg-primary-500/5' : ''}>
                   <Table.Td>
                     <div className="flex items-center gap-3">
                       {c.logo_url && (
@@ -59,7 +59,7 @@ export default function CompanyTable({ companies, pagination, editingCompany, on
                           href={`/order/${c.slug}`} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-semibold shadow-sm shadow-indigo-500/20 transition-all active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-xs font-semibold shadow-sm shadow-primary-500/20 transition-all active:scale-95"
                           title="Abrir portal"
                         >
                           <Globe className="w-3.5 h-3.5" />
@@ -67,7 +67,7 @@ export default function CompanyTable({ companies, pagination, editingCompany, on
                         </a>
                         <button 
                           onClick={() => navigator.clipboard.writeText(`${window.location.origin}/order/${c.slug}`)}
-                          className="p-1.5 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition-colors border border-transparent hover:border-indigo-500/20"
+                          className="p-1.5 text-primary-400 hover:text-primary-300 hover:bg-primary-500/10 rounded-lg transition-colors border border-transparent hover:border-primary-500/20"
                           title="Copiar enlace"
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -89,9 +89,11 @@ export default function CompanyTable({ companies, pagination, editingCompany, on
                     </span>
                   </Table.Td>
                   <Table.Td className="text-right">
-                    <button onClick={() => onEdit(c)} className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center justify-end gap-1.5 ml-auto transition-colors">
-                      <Pencil className="w-3.5 h-3.5" /> Editar
-                    </button>
+                    <div className="flex items-center justify-end">
+                      <button onClick={() => onEdit(c)} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors" title="Editar">
+                        <Pencil size={18} />
+                      </button>
+                    </div>
                   </Table.Td>
                 </Table.Tr>
               ))

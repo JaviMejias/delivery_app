@@ -6,7 +6,7 @@ class LocalClosure < ApplicationRecord
   enum :status, { pending: 0, completed: 1 }
 
   validates :date, presence: true
-  validates :warehouse_id, uniqueness: { scope: [:date, :company_id], message: "Ya existe un cierre para este local en esta fecha" }
+  validates :warehouse_id, uniqueness: { scope: [ :date, :company_id ], message: "Ya existe un cierre para este local en esta fecha" }
 
   scope :with_details, -> { includes(:warehouse) }
 
@@ -20,7 +20,7 @@ class LocalClosure < ApplicationRecord
         company_id: company_id,
         date: date,
         amount: declared_cash,
-        payment_method: 'cash',
+        payment_method: "cash",
         source: self
       )
     end
@@ -29,7 +29,7 @@ class LocalClosure < ApplicationRecord
         company_id: company_id,
         date: date,
         amount: declared_card,
-        payment_method: 'card',
+        payment_method: "card",
         source: self
       )
     end
@@ -38,7 +38,7 @@ class LocalClosure < ApplicationRecord
         company_id: company_id,
         date: date,
         amount: declared_transfer,
-        payment_method: 'transfer',
+        payment_method: "transfer",
         source: self
       )
     end

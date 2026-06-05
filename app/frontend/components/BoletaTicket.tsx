@@ -7,7 +7,7 @@ interface BoletaTicketProps {
 }
 
 export default function BoletaTicket({ sale, paperSize }: BoletaTicketProps) {
-  const { auth } = usePage<any>().props
+  const { auth, app_name } = usePage<any>().props
   
   // Try to find the active company to show its details in the header
   const company = auth?.current_company || {
@@ -127,7 +127,7 @@ export default function BoletaTicket({ sale, paperSize }: BoletaTicketProps) {
 
         <div className="border-t border-black border-dashed mt-4 pt-4 text-center text-xs pb-4">
           <p>¡Gracias por su preferencia!</p>
-          <p className="mt-1 opacity-70">Desarrollado por StockFlow</p>
+          <p className="mt-1 opacity-70">Sistema {app_name}</p>
         </div>
       </div>
     </div>

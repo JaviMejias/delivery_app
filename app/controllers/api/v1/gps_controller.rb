@@ -2,16 +2,16 @@ module Api
   module V1
     class GpsController < ActionController::API
       def update
-        token = params[:token] || request.headers['X-GPS-Token']
-        
+        token = params[:token] || request.headers["X-GPS-Token"]
+
         if token.blank?
-          render json: { error: 'Token no proporcionado' }, status: :bad_request
+          render json: { error: "Token no proporcionado" }, status: :bad_request
           return
         end
         truck = ActsAsTenant.with_tenant(nil) { Truck.find_by(gps_device_token: token) }
 
         if truck.nil?
-          render json: { error: 'Camion no encontrado con el token provisto' }, status: :not_found
+          render json: { error: "Camion no encontrado con el token provisto" }, status: :not_found
           return
         end
         ActsAsTenant.with_tenant(truck.company) do
@@ -27,9 +27,9 @@ module Api
               end
             end
 
-            render json: { 
-              status: 'success', 
-              message: 'Coordenadas actualizadas con exito',
+            render json: {
+              status: "success",
+              message: "Coordenadas actualizadas con exito",
               truck: {
                 plate_number: truck.plate_number,
                 latitude: truck.latitude.to_f,

@@ -2,46 +2,32 @@ import React, { useState } from 'react'
 import { Head, Link, useForm, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
+import { TableFilters } from '@/components/TableFilters'
 import Pagination from '@/components/Pagination'
-import { Users, ShieldAlert, CheckCircle, Search, Mail, Phone, MapPin, Filter } from 'lucide-react'
-import Swal from 'sweetalert2'
+import { Users, ShieldAlert, CheckCircle, Search, Mail, Phone, MapPin, Filter, Unlock } from 'lucide-react'
+import { confirmDelete } from '@/utils/alerts'
 
 export default function CustomersIndex({ customers, pagination, currentSearch, currentStatus }: any) {
   const { put, processing } = useForm()
   const [search, setSearch] = useState(currentSearch || '')
   const [status, setStatus] = useState(currentStatus || 'all')
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    router.get('/customers', { search, status }, { preserveState: true })
-  }
+  const [isFiltering, setIsFiltering] = useState(false)
 
-  const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus)
-    router.get('/customers', { search, status: newStatus }, { preserveState: true })
+  const applyFilters = () => {
+    router.get('/customers', { search, status }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
   }
 
   const handleUnblock = (id: number) => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Desbloquear cliente?',
       text: '¿Estás seguro de que deseas perdonar a este cliente? Su contador de cancelaciones volverá a 0 y podrá hacer pedidos nuevamente.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
       confirmButtonText: 'Sí, desbloquear',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-bg)',
-      color: 'var(--sf-text-main)',
-      customClass: {
-        popup: 'border border-[var(--sf-border)] rounded-2xl shadow-2xl',
-        confirmButton: 'rounded-xl px-4 py-2 font-bold',
-        cancelButton: 'rounded-xl px-4 py-2 font-bold'
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        put(`/customers/${id}/unblock`)
-      }
+      onConfirm: () => put(`/customers/${id}/unblock`)
     })
   }
 
@@ -57,44 +43,25 @@ export default function CustomersIndex({ customers, pagination, currentSearch, c
           color="indigo"
         />
 
-        {/* Filters */}
-        <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <form onSubmit={handleSearch} className="relative w-full sm:w-96">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-[var(--sf-text-muted)]" />
-            </div>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, teléfono o correo..."
-              className="block w-full pl-10 pr-3 py-2.5 border border-[var(--sf-border)] rounded-xl leading-5 bg-[var(--sf-bg)] text-[var(--sf-text-main)] placeholder-[var(--sf-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 sm:text-sm transition-all"
-            />
-          </form>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide pb-2 sm:pb-0">
-            <div className="flex items-center gap-2 bg-[var(--sf-bg)] p-1 rounded-xl border border-[var(--sf-border)] shrink-0">
-              <button
-                onClick={() => handleStatusChange('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${status === 'all' ? 'bg-[var(--sf-surface)] text-[var(--sf-text-main)] shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-              >
-                Todos
-              </button>
-              <button
-                onClick={() => handleStatusChange('active')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${status === 'active' ? 'bg-[var(--sf-surface)] text-emerald-500 shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-              >
-                Activos
-              </button>
-              <button
-                onClick={() => handleStatusChange('blocked')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${status === 'blocked' ? 'bg-[var(--sf-surface)] text-rose-500 shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-              >
-                Bloqueados
-              </button>
-            </div>
-          </div>
-        </div>
+        <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+          <TableFilters.Search
+            value={search}
+            onChange={setSearch}
+            onSearch={applyFilters}
+            placeholder="Buscar por nombre, teléfono o correo..."
+            className="w-full sm:w-96"
+          />
+          <TableFilters.Select
+            label="Estado"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { label: 'Todos', value: 'all' },
+              { label: 'Activos', value: 'active' },
+              { label: 'Bloqueados', value: 'blocked' }
+            ]}
+          />
+        </TableFilters>
 
         <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
@@ -113,7 +80,7 @@ export default function CustomersIndex({ customers, pagination, currentSearch, c
                   <tr key={customer.id} className="hover:bg-[var(--sf-bg)]/50 transition-colors">
                     <td className="px-6 py-4 font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-lg border border-indigo-500/20">
+                        <div className="w-10 h-10 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold text-lg border border-primary-500/20">
                           {customer.first_name?.[0]}{customer.last_name?.[0]}
                         </div>
                         <div>
@@ -150,9 +117,10 @@ export default function CustomersIndex({ customers, pagination, currentSearch, c
                         <button
                           onClick={() => handleUnblock(customer.id)}
                           disabled={processing}
-                          className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+                          className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors disabled:opacity-50 inline-flex items-center justify-center"
+                          title="Desbloquear"
                         >
-                          Desbloquear
+                          <Unlock size={18} />
                         </button>
                       )}
                     </td>

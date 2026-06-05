@@ -1,5 +1,5 @@
 class Public::Customers::SessionsController < Devise::SessionsController
-  layout 'public'
+  layout "public"
   before_action :find_company_by_slug
   before_action :configure_permitted_parameters, if: :devise_controller?
 
@@ -11,6 +11,9 @@ class Public::Customers::SessionsController < Devise::SessionsController
 
   def create
     self.resource = warden.authenticate!(auth_options)
+    if params.dig(:public_order_customer, :remember_me) == "1" || params.dig(:public_order_customer, :remember_me) == true
+      resource.remember_me = true
+    end
     set_flash_message!(:notice, :signed_in)
     sign_in(resource_name, resource)
     # Redirect back to the order page
@@ -26,12 +29,12 @@ class Public::Customers::SessionsController < Devise::SessionsController
   protected
 
   def configure_permitted_parameters
-    devise_parameter_sanitizer.permit(:sign_in, keys: [:login])
+    devise_parameter_sanitizer.permit(:sign_in, keys: [ :login ])
   end
 
   def find_company_by_slug
     @company = Company.find_by!(slug: params[:company_slug])
   rescue ActiveRecord::RecordNotFound
-    render plain: 'Empresa no encontrada', status: :not_found
+    render plain: "Empresa no encontrada", status: :not_found
   end
 end

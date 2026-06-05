@@ -12,7 +12,7 @@ export default function History({ company, current_customer, orders, pagination,
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'pending': return { label: 'Pendiente', color: 'text-orange-400', bg: 'bg-orange-400/10' }
-      case 'accepted': return { label: 'Aceptado', color: 'text-indigo-400', bg: 'bg-indigo-400/10' }
+      case 'accepted': return { label: 'Aceptado', color: 'text-primary-400', bg: 'bg-primary-400/10' }
       case 'in_transit': return { label: 'En Camino', color: 'text-blue-400', bg: 'bg-blue-400/10' }
       case 'nearby': return { label: 'Cerca', color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' }
       case 'arrived': return { label: 'En Puerta', color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
@@ -26,7 +26,7 @@ export default function History({ company, current_customer, orders, pagination,
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-emerald-500" />
       case 'cancelled': return <XCircle className="w-5 h-5 text-rose-400" />
-      default: return <Truck className="w-5 h-5 text-indigo-400" />
+      default: return <Truck className="w-5 h-5 text-primary-400" />
     }
   }
 
@@ -124,7 +124,7 @@ export default function History({ company, current_customer, orders, pagination,
             <Package className="w-16 h-16 text-slate-700 mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">Aún no tienes pedidos</h3>
             <p className="text-slate-400 mb-6">No encontramos pedidos en este mes para {company.name}.</p>
-            <Link href={`/order/${company.slug}`} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors">
+            <Link href={`/order/${company.slug}`} className="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl transition-colors">
               Hacer un nuevo pedido
             </Link>
           </div>
@@ -168,8 +168,8 @@ export default function History({ company, current_customer, orders, pagination,
                       <div className="space-y-2.5 w-full">
                         {order.details.items?.map((item: any, i: number) => (
                           <div key={i} className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
-                              <span className="font-black text-indigo-400 text-xs">{item.quantity}</span>
+                            <div className="w-6 h-6 rounded-lg bg-primary-500/10 flex items-center justify-center border border-primary-500/20 shrink-0">
+                              <span className="font-black text-primary-400 text-xs">{item.quantity}</span>
                             </div>
                             <span className="text-sm font-medium text-slate-200 line-clamp-1">{item.name}</span>
                           </div>
@@ -190,7 +190,7 @@ export default function History({ company, current_customer, orders, pagination,
                     {order.status !== 'completed' && order.status !== 'cancelled' && (
                       <Link
                         href={`/order/${company.slug}/track/${order.order_token}`}
-                        className="flex-1 flex justify-center items-center gap-1.5 text-indigo-400 hover:text-white font-bold text-sm bg-indigo-500/10 hover:bg-indigo-500 px-4 py-2.5 rounded-xl transition-all"
+                        className="flex-1 flex justify-center items-center gap-1.5 text-primary-400 hover:text-white font-bold text-sm bg-primary-500/10 hover:bg-primary-500 px-4 py-2.5 rounded-xl transition-all"
                       >
                         <Navigation className="w-4 h-4" />
                         Ver Mapa

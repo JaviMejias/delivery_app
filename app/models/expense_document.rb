@@ -3,7 +3,7 @@ class ExpenseDocument < ApplicationRecord
   belongs_to :purchase_document
 
   validates :amount_applied, numericality: { greater_than: 0 }
-  
+
   after_save :update_purchase_document_paid_amount
   after_destroy :update_purchase_document_paid_amount
 

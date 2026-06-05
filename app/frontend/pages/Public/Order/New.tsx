@@ -140,8 +140,10 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
     if (!L || mapRef.current) return
     mapRef.current = L.map('order-map', { zoomControl: false, attributionControl: false }).setView([-33.4489, -70.6693], 15)
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd', maxZoom: 20
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      maxNativeZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 20
     }).addTo(mapRef.current)
 
     const center = mapRef.current.getCenter()
@@ -494,7 +496,7 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
         hasMovedMap={hasMovedMap}
         currentStep={currentStep}
         setStep={setCurrentStep}
-        isAddressValid={!!addressText.trim() && latitude !== null && longitude !== null}
+        isAddressValid={latitude !== null && longitude !== null}
         customer_addresses={customer_addresses}
         onSelectAddress={(addr) => {
           const lat = parseFloat(addr.latitude)
@@ -522,9 +524,9 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
             
             <button
               onClick={() => setCurrentStep(2)}
-              disabled={!(!!addressText.trim() && latitude !== null && longitude !== null)}
+              disabled={!(latitude !== null && longitude !== null)}
               className={`px-8 py-4 rounded-2xl font-black transition-all shadow-xl ${
-                !!addressText.trim() && latitude !== null && longitude !== null
+                latitude !== null && longitude !== null
                   ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-orange-500/20 hover:scale-105 active:scale-95'
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
               }`}
@@ -548,7 +550,7 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
                   <MapPin className="w-4 h-4 shrink-0" />
                   <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">Direcciones</span>
                 </a>
-                <a href={`/order/${company.slug}/history`} className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-2 py-1.5 sm:px-3 rounded-lg border border-indigo-500/20 active:scale-95" title="Mis Pedidos">
+                <a href={`/order/${company.slug}/history`} className="flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors bg-primary-500/10 px-2 py-1.5 sm:px-3 rounded-lg border border-primary-500/20 active:scale-95" title="Mis Pedidos">
                   <Package className="w-4 h-4 shrink-0" />
                   <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">Pedidos</span>
                 </a>

@@ -12,6 +12,6 @@ class DashboardController < ApplicationController
     end
 
     dashboard_data = DashboardAnalyticsService.new(current_tenant, params).call
-    render inertia: 'Dashboard/Index', props: dashboard_data
+    render inertia: "Dashboard/Index", props: dashboard_data
   end
 end

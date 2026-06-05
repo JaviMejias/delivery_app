@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Head, router, Link } from '@inertiajs/react'
 import Swal from 'sweetalert2'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
@@ -58,13 +59,14 @@ interface Props {
   price_lists: PriceList[]
   inventories: Inventory[]
   print_sale?: any
+  has_sales_today?: boolean
 }
 
 const formatCLP = (amount: number | string) => {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(amount))
 }
 
-export default function Pos({ warehouses, inventories, price_lists, print_sale, auth }: any) {
+export default function Pos({ warehouses, inventories, price_lists, print_sale, has_sales_today, auth }: any) {
   const assignedWarehouseId = auth?.user?.assigned_warehouse_id?.toString()
   const isAdmin = auth?.user?.role === 'admin'
 
@@ -80,6 +82,12 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
 
   const [selectedSaleForTicket, setSelectedSaleForTicket] = useState<any | null>(print_sale || null)
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm')
+
+  useEffect(() => {
+    if (print_sale) {
+      setSelectedSaleForTicket(print_sale)
+    }
+  }, [print_sale])
 
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
@@ -346,13 +354,22 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                 <button
                   key={pl.id}
                   onClick={() => setPriceListId(pl.id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${priceListId === pl.id ? 'bg-indigo-500 text-[var(--sf-text-main)]' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${priceListId === pl.id ? 'bg-primary-500 text-[var(--sf-text-main)]' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
                 >
                   {pl.name}
                 </button>
               ))
             )}
           </div>
+          
+          {has_sales_today && (
+            <Link
+              href="/sales/local/closures"
+              className="px-4 py-1.5 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 font-bold rounded-lg border border-orange-500/20 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
+            >
+              🔒 Cierres de Caja
+            </Link>
+          )}
         </div>
       </PageHeader>
 
@@ -384,7 +401,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                   value={gridSearch} 
                   onChange={e => setGridSearch(e.target.value)}
                   placeholder="Filtrar catálogo..."
-                  className="w-full bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             )}
@@ -407,7 +424,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                     <button
                       key={inv.id}
                       onClick={() => addToCart(inv)}
-                      className="flex flex-col text-left p-4 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-bg)] hover:bg-[var(--sf-surface)] hover:border-indigo-500/50 transition-all group"
+                      className="flex flex-col text-left p-4 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-bg)] hover:bg-[var(--sf-surface)] hover:border-primary-500/50 transition-all group interactive-card"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[var(--sf-text-muted)] text-xs font-mono">{inv.item.sku}</span>
@@ -417,9 +434,9 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                           </span>
                         )}
                       </div>
-                      <div className="text-[var(--sf-text-main)] font-bold mb-2 group-hover:text-indigo-400 transition-colors line-clamp-2">{inv.item.name}</div>
+                      <div className="text-[var(--sf-text-main)] font-bold mb-2 group-hover:text-primary-400 transition-colors line-clamp-2">{inv.item.name}</div>
                       <div className="mt-auto flex justify-between items-end w-full">
-                        <div className="text-emerald-400 font-black text-lg">{formatCLP(price)}</div>
+                        <div className="text-primary-400 font-black text-lg">{formatCLP(price)}</div>
                         <div className="text-[var(--sf-text-muted)] text-xs font-medium bg-[var(--sf-dark-border)] px-2 py-1 rounded-md">
                           Stock: {inv.quantity}
                         </div>
@@ -432,7 +449,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
               <div className="max-w-2xl mx-auto p-6 mt-6">
                 <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl p-6 shadow-sm">
                   <h2 className="text-lg font-bold text-[var(--sf-text-main)] mb-6 flex items-center gap-2">
-                    <Keyboard className="text-indigo-400" /> Ingreso Rápido de Producto
+                    <Keyboard className="text-primary-400" /> Ingreso Rápido de Producto
                   </h2>
                   
                   <form onSubmit={e => { e.preventDefault(); handleFastAdd(); }} className="space-y-5">
@@ -457,10 +474,10 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                       />
                       
                       {selectedFastInv && (
-                        <div className="mt-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 flex justify-between items-center text-sm">
+                        <div className="mt-3 bg-primary-500/10 border border-primary-500/20 rounded-lg p-3 flex justify-between items-center text-sm">
                           <div>
                             <span className="text-[var(--sf-text-muted)]">Precio: </span>
-                            <span className="font-bold text-emerald-400">{formatCLP(getProductPrice(selectedFastInv.item, priceListId))}</span>
+                            <span className="font-bold text-primary-400">{formatCLP(getProductPrice(selectedFastInv.item, priceListId))}</span>
                           </div>
                           <div>
                             <span className="text-[var(--sf-text-muted)]">Stock disp: </span>
@@ -476,7 +493,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                         <input
                           type="number" min="1" value={fastQuantity}
                           onChange={e => setFastQuantity(parseInt(e.target.value) || 1)}
-                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 text-center font-bold"
+                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 text-center font-bold"
                         />
                       </div>
                       <div>
@@ -484,7 +501,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                         <input
                           type="number" min="0" value={fastEmpty} disabled={!selectedFastInv?.item.material?.returnable}
                           onChange={e => setFastEmpty(parseInt(e.target.value) || 0)}
-                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 text-center font-bold disabled:opacity-50"
+                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 text-center font-bold disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -492,7 +509,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                     <button
                       type="submit"
                       disabled={!fastProductId || fastQuantity <= 0}
-                      className="w-full py-4 mt-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full py-4 mt-2 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       <Plus size={20} /> AGREGAR A LA VENTA (Enter)
                     </button>
@@ -533,7 +550,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                         <input
                           type="number" min="1" value={item.quantity}
                           onChange={e => updateCartItem(item.cartId, 'quantity', parseInt(e.target.value) || 1)}
-                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-indigo-500"
+                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
                       {item.product.material?.returnable && (
@@ -542,7 +559,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                           <input
                             type="number" min="0" value={item.returned_empty_quantity}
                             onChange={e => updateCartItem(item.cartId, 'returned_empty_quantity', parseInt(e.target.value) || 0)}
-                            className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-indigo-500"
+                            className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary-500"
                           />
                         </div>
                       )}
@@ -555,7 +572,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                             type="checkbox"
                             checked={item.useVoucher}
                             onChange={e => updateCartItem(item.cartId, 'useVoucher', e.target.checked)}
-                            className="rounded border-[var(--sf-border)] bg-[var(--sf-surface)] text-indigo-500"
+                            className="rounded border-[var(--sf-border)] bg-[var(--sf-surface)] text-primary-500"
                           />
                           Paga con Vale
                         </label>
@@ -564,7 +581,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                             type="text" placeholder="Código de Vale"
                             value={item.voucherCode}
                             onChange={e => updateCartItem(item.cartId, 'voucherCode', e.target.value)}
-                            className="flex-1 bg-[var(--sf-surface)] border border-indigo-500/30 text-indigo-300 text-xs rounded-md px-2 py-1 focus:ring-1 focus:ring-indigo-500 uppercase"
+                            className="flex-1 bg-[var(--sf-surface)] border border-primary-500/30 text-primary-300 text-xs rounded-md px-2 py-1 focus:ring-1 focus:ring-primary-500 uppercase"
                           />
                         )}
                       </div>
@@ -576,21 +593,21 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
           </div>
 
           <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-bg)]">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[var(--sf-text-muted)] font-medium">SUBTOTAL</span>
-              <span className="text-xl font-bold text-[var(--sf-text-main)]">{formatCLP(subtotal)}</span>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[var(--sf-text-muted)] text-sm font-semibold">SUBTOTAL</span>
+              <span className="text-lg font-bold text-[var(--sf-text-main)]">{formatCLP(subtotal)}</span>
             </div>
             
             {cardSurcharge > 0 && (
-              <div className="flex justify-between items-center mb-2 animate-fade-in">
+              <div className="flex justify-between items-center mb-3 animate-fade-in">
                 <span className="text-blue-400 text-sm font-medium">Recargo por Tarjeta ({currentWarehouse?.card_surcharge_type === 'percentage' ? `${currentWarehouse.card_surcharge_amount}%` : 'Fijo'})</span>
                 <span className="text-blue-400 font-bold">+{formatCLP(cardSurcharge)}</span>
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-4 pt-2 border-t border-[var(--sf-border)]">
-              <span className="text-[var(--sf-text-muted)] font-bold">TOTAL A PAGAR</span>
-              <span className="text-3xl font-black text-[var(--sf-text-main)]">{formatCLP(totalWithSurcharge)}</span>
+            <div className="flex justify-between items-center mb-5 pt-3 border-t border-[var(--sf-border)]">
+              <span className="text-[var(--sf-text-main)] font-black uppercase tracking-wider text-sm">TOTAL A PAGAR</span>
+              <span className="text-2xl font-black text-primary-500">{formatCLP(totalWithSurcharge)}</span>
             </div>
 
             {totalWithSurcharge > 0 && (
@@ -598,7 +615,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                 <div className="space-y-3 mb-6">
                   <div>
                     <label className="text-xs font-medium text-[var(--sf-text-muted)] block mb-1">Efectivo Pagado</label>
-                    <CurrencyInput value={cash} onValueChange={setCash} className="text-emerald-400 font-bold !py-2 text-sm" />
+                    <CurrencyInput value={cash} onValueChange={setCash} className="text-primary-400 font-bold !py-2 text-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -644,7 +661,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
             <button
               onClick={handleCheckout}
               disabled={isProcessing || cart.length === 0 || currentDeclared < subtotal}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-[var(--sf-text-main)] font-black rounded-xl transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-black rounded-xl transition-all shadow-lg shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isProcessing ? 'PROCESANDO...' : '💰 COBRAR VENTA'}
             </button>
@@ -654,12 +671,12 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
       </div>
 
       {/* Modal for Boleta Ticket Auto-Print */}
-      {selectedSaleForTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
+      {selectedSaleForTicket && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col my-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+            <div className="flex flex-wrap justify-between items-center gap-4 p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
               <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <Printer className="w-5 h-5 text-indigo-400" />
+                <Printer className="w-5 h-5 text-primary-400" />
                 Venta Procesada
               </h3>
               
@@ -667,13 +684,13 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                 <div className="flex bg-[var(--sf-bg)] rounded-lg p-1 border border-[var(--sf-border)]">
                   <button
                     onClick={() => setPaperSize('80mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-indigo-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
                   >
                     80mm
                   </button>
                   <button
                     onClick={() => setPaperSize('58mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-indigo-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
                   >
                     58mm
                   </button>
@@ -705,14 +722,15 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
               >
                 <Printer size={18} />
                 Imprimir Boleta
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </AuthenticatedLayout>
   )

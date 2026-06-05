@@ -9,7 +9,7 @@ class UnifyDriversAndUsers < ActiveRecord::Migration[8.1]
 
     remove_foreign_key :trucks, :drivers
     add_foreign_key :trucks, :users, column: :driver_id
-    
+
     drop_table :drivers
   end
 end

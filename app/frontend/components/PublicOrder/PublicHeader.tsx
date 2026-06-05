@@ -83,8 +83,8 @@ export default function PublicHeader({ company, current_customer }: PublicHeader
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-white/5 transition-all active:scale-95"
           >
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
-              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-primary-500/20 flex items-center justify-center shrink-0">
+              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-400" />
             </div>
             <span className="hidden sm:block text-sm font-bold text-slate-200">
               Hola, {current_customer.first_name}
@@ -110,7 +110,7 @@ export default function PublicHeader({ company, current_customer }: PublicHeader
                   href={`/order/${company.slug}/history`}
                   className="w-full flex items-center gap-3 px-3 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-700/50 rounded-xl transition-colors"
                 >
-                  <Package className="w-4 h-4 text-indigo-400" />
+                  <Package className="w-4 h-4 text-primary-400" />
                   Mis Pedidos
                 </Link>
                 <Link 
@@ -145,7 +145,7 @@ export default function PublicHeader({ company, current_customer }: PublicHeader
           </button>
           <Link 
             href={`/order/${company.slug}/auth/login`}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 rounded-xl transition-colors active:scale-95 text-sm font-bold text-white shadow-lg shadow-indigo-500/20"
+            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-500 px-4 py-2.5 rounded-xl transition-colors active:scale-95 text-sm font-bold text-white shadow-lg shadow-primary-500/20"
           >
             <User className="w-4 h-4" />
             Ingresar

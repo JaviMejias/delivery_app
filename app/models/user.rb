@@ -1,13 +1,14 @@
 class User < ApplicationRecord
   devise :database_authenticatable, :recoverable, :rememberable, :validatable
-  belongs_to :current_company, class_name: 'Company', optional: true
+  belongs_to :current_company, class_name: "Company", optional: true
   has_many :company_memberships, dependent: :destroy
   has_many :companies, through: :company_memberships
   before_validation :generate_driver_credentials, on: :create
+  has_many :notifications, dependent: :destroy
   enum :role, { admin: 0, warehouse_keeper: 1, driver: 2, cashier: 3 }, default: :admin
   validates :first_name, :last_name, presence: true
   validates :role, presence: true
-  validates :rut, presence: true, if: -> { role == 'driver' }
+  validates :rut, presence: true, if: -> { role == "driver" }
   scope :active, -> { where(active: true) }
   scope :drivers, -> { where(role: :driver) }
   scope :warehouse_keepers, -> { where(role: :warehouse_keeper) }
@@ -30,9 +31,9 @@ class User < ApplicationRecord
   private
 
   def generate_driver_credentials
-    if role == 'driver'
+    if role == "driver"
       if email.blank? && rut.present?
-        clean_rut = rut.gsub(/[^0-9kK]/, '').downcase
+        clean_rut = rut.gsub(/[^0-9kK]/, "").downcase
         self.email = "#{clean_rut}@gmail.com"
       end
       if password.blank?

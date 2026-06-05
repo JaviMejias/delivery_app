@@ -22,7 +22,7 @@ export default function RadarOrderModal({ order, data, accepting, acceptError, o
             <h3 className="font-black text-white text-base">
               {order.is_proposed ? '¡Despacho Asignado!' : 'Detalle del Pedido'}
             </h3>
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${order.is_proposed ? 'text-indigo-400' : 'text-orange-400'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${order.is_proposed ? 'text-primary-400' : 'text-orange-400'}`}>
               {order.is_proposed ? 'Propuesta de administración' : 'Pendiente de aceptación'}
             </span>
           </div>
@@ -41,7 +41,7 @@ export default function RadarOrderModal({ order, data, accepting, acceptError, o
                 <a href={`tel:${order.phone}`} className="text-sm text-slate-300 hover:text-emerald-300 transition-colors font-semibold">{order.phone}</a>
               </div>
               <a
-                href={`https://wa.me/${order.phone.replace(/\\D/g, '').startsWith('569') ? order.phone.replace(/\\D/g, '') : '569' + order.phone.replace(/\\D/g, '').slice(-8)}?text=${encodeURIComponent('Hola ' + order.client_name + ', hemos recibido tu pedido.')}`}
+                href={`https://wa.me/${order.phone.replace(/\D/g, '').startsWith('569') ? order.phone.replace(/\D/g, '') : '569' + order.phone.replace(/\D/g, '').slice(-8)}?text=${encodeURIComponent('Hola ' + order.client_name + ', hemos recibido tu pedido.')}`}
                 target="_blank" rel="noreferrer"
                 className="flex items-center gap-1.5 px-2.5 py-1 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/40 text-[#25D366] text-[10px] font-bold rounded-lg transition-colors pointer-events-auto"
               >
@@ -81,10 +81,10 @@ export default function RadarOrderModal({ order, data, accepting, acceptError, o
           ) : order.details.items?.map((item, i) => (
             <div key={i} className="flex items-center justify-between py-1">
               <div className="flex items-center gap-2">
-                <Package className="w-3.5 h-3.5 text-indigo-400" />
+                <Package className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-sm text-slate-200">{item.name}</span>
               </div>
-              <span className="font-black text-indigo-400 text-sm">{item.quantity}x</span>
+              <span className="font-black text-primary-400 text-sm">{item.quantity}x</span>
             </div>
           ))}
         </div>

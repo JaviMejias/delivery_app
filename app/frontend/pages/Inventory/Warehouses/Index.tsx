@@ -1,14 +1,14 @@
 import { useState, useRef } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
-import Swal from 'sweetalert2'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Table from '@/components/Table'
 import Pagination from '@/components/Pagination'
-import SearchBar from '@/components/SearchBar'
+import { TableFilters } from '@/components/TableFilters'
 import { Building2, Pencil, Trash2, Save, X } from 'lucide-react'
 import { CustomSwitch } from '@/components/CustomSwitch'
+import { confirmDelete } from '@/utils/alerts'
 
 interface Warehouse {
   id: number
@@ -29,7 +29,17 @@ interface Props {
 
 export default function WarehousesIndex({ warehouses, pagination, currentSearch }: Props) {
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null)
+  const [search, setSearch] = useState(currentSearch || '')
+  const [isFiltering, setIsFiltering] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const applyFilters = () => {
+    router.get('/inventory/warehouses', { search }, { 
+      preserveState: true,
+      onStart: () => setIsFiltering(true),
+      onFinish: () => setIsFiltering(false)
+    })
+  }
 
   const form = useForm({
     name: '',
@@ -78,27 +88,11 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
   }
 
   const deleteWarehouse = (id: number) => {
-    Swal.fire({
+    confirmDelete({
       title: '¿Eliminar bodega?',
-      text: "No podrás revertir esto",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6366f1',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      background: 'var(--sf-dark-card)',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.delete(`/inventory/warehouses/${id}`, {
-          onSuccess: () => {
-            if (editingWarehouse?.id === id) {
-              cancelEdit()
-            }
-          }
-        })
-      }
+      onConfirm: () => router.delete(`/inventory/warehouses/${id}`, {
+        onSuccess: () => { if (editingWarehouse?.id === id) { cancelEdit() } }
+      })
     })
   }
 
@@ -117,11 +111,11 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
           <div className="lg:col-span-1" ref={formRef}>
-            <Card className={editingWarehouse ? 'ring-2 ring-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
+            <Card className={editingWarehouse ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${
                   editingWarehouse 
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
+                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-400' 
                     : 'bg-[var(--sf-surface)] border-[var(--sf-border)] text-[var(--sf-text-main)]'
                 }`}>
                   {editingWarehouse ? <Pencil className="w-5 h-5 shrink-0" /> : <Building2 className="w-5 h-5 shrink-0 text-[var(--sf-text-muted)]" />}
@@ -141,7 +135,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                       type="text"
                       value={form.data.name}
                       onChange={e => form.setData('name', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                       required
                     />
                   </div>
@@ -151,7 +145,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                       type="text"
                       value={form.data.address}
                       onChange={e => form.setData('address', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                       placeholder="Ej: Av. Providencia 1234"
                     />
                   </div>
@@ -162,7 +156,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                         type="text"
                         value={form.data.latitude}
                         onChange={e => form.setData('latitude', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                         placeholder="Ej: -33.4489"
                       />
                     </div>
@@ -172,7 +166,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                         type="text"
                         value={form.data.longitude}
                         onChange={e => form.setData('longitude', e.target.value)}
-                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                         placeholder="Ej: -70.6693"
                       />
                     </div>
@@ -194,7 +188,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                         <select
                           value={form.data.card_surcharge_type}
                           onChange={e => form.setData('card_surcharge_type', e.target.value)}
-                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                         >
                           <option value="fixed">Monto Fijo ($)</option>
                           <option value="percentage">Porcentaje (%)</option>
@@ -207,7 +201,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                           step="0.01"
                           value={form.data.card_surcharge_amount}
                           onChange={e => form.setData('card_surcharge_amount', e.target.value)}
-                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full px-4 py-2 bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl text-[var(--sf-text-main)] focus:ring-2 focus:ring-primary-500/50"
                           placeholder={form.data.card_surcharge_type === 'percentage' ? 'Ej: 2.9' : 'Ej: 300'}
                         />
                       </div>
@@ -218,7 +212,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                     <button
                       type="submit"
                       disabled={form.processing}
-                      className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-[var(--sf-text-main)] font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       {editingWarehouse ? 'Actualizar Bodega' : 'Guardar Bodega'}
@@ -240,11 +234,17 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
           </div>
 
           {/* Lista */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TableFilters onApply={applyFilters} isLoading={isFiltering}>
+              <TableFilters.Search
+                value={search}
+                onChange={setSearch}
+                onSearch={applyFilters}
+                placeholder="Buscar por nombre..."
+                className="w-full sm:w-96"
+              />
+            </TableFilters>
             <Card className="overflow-hidden flex flex-col h-full">
-              <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]">
-                <SearchBar routeName="/inventory/warehouses" currentSearch={currentSearch || ""} placeholder="Buscar por nombre..." />
-              </div>
               <div className="flex-1 overflow-auto">
                 <Table>
                   <Table.Thead>
@@ -265,7 +265,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                       </Table.Tr>
                     ) : (
                       warehouses.map((w) => (
-                        <Table.Tr key={w.id} className={editingWarehouse?.id === w.id ? 'bg-indigo-500/5' : ''}>
+                        <Table.Tr key={w.id} className={editingWarehouse?.id === w.id ? 'bg-primary-500/5' : ''}>
                           <Table.Td className="text-[var(--sf-text-main)] font-medium">{w.name}</Table.Td>
                           <Table.Td className="min-w-[300px]">
                             {w.address ? (
@@ -283,7 +283,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                             {(!w.card_surcharge_amount || parseFloat(w.card_surcharge_amount.toString()) === 0) ? (
                               <span className="text-[var(--sf-text-muted)] text-sm">Sin recargo</span>
                             ) : (
-                              <span className="text-indigo-400 font-medium text-sm">
+                              <span className="text-primary-400 font-medium text-sm">
                                 {w.card_surcharge_type === 'percentage' 
                                   ? `+${w.card_surcharge_amount}%` 
                                   : `+$${w.card_surcharge_amount}`}
@@ -300,12 +300,12 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
                             </span>
                           </Table.Td>
                           <Table.Td className="text-right">
-                            <div className="flex items-center justify-end gap-3">
-                              <button onClick={() => editWarehouse(w)} className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Pencil className="w-3.5 h-3.5" /> Editar
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => editWarehouse(w)} className="p-2 text-[var(--sf-text-muted)] hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors" title="Editar">
+                                <Pencil size={18} />
                               </button>
-                              <button onClick={() => deleteWarehouse(w.id)} className="text-red-400 hover:text-red-300 font-medium flex items-center gap-1.5 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                              <button onClick={() => deleteWarehouse(w.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar">
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </Table.Td>

@@ -7,7 +7,7 @@ class ProcessRouteSettlementService
   end
 
   def call
-    raise 'Esta rendición ya fue completada.' if @settlement.completed?
+    raise "Esta rendición ya fue completada." if @settlement.completed?
 
     ActiveRecord::Base.transaction do
       if @params[:cash_revenue].present? || @params[:card_revenue].present? || @params[:transfer_revenue].present?

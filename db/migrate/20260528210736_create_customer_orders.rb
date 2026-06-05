@@ -18,6 +18,6 @@ class CreateCustomerOrders < ActiveRecord::Migration[8.1]
       t.timestamps
     end
     add_index :customer_orders, :order_token, unique: true
-    add_index :customer_orders, [:company_id, :status]
+    add_index :customer_orders, [ :company_id, :status ]
   end
 end

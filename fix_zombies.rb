@@ -1,5 +1,5 @@
 require_relative 'config/environment'
-orders = CustomerOrder.where(status: [:accepted, :in_transit]).where.not(truck_id: nil)
+orders = CustomerOrder.where(status: [ :accepted, :in_transit ]).where.not(truck_id: nil)
 
 puts "Limpiando #{orders.count} ordenes fantasma..."
 

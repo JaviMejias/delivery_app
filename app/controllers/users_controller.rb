@@ -1,9 +1,14 @@
 class UsersController < ApplicationController
   before_action :require_admin!
-  wrap_parameters include: User.attribute_names + [:password, :password_confirmation, :warehouse_id]
+  wrap_parameters include: User.attribute_names + [ :password, :password_confirmation, :warehouse_id ]
 
   def index
     users = ActsAsTenant.current_tenant.users.order(id: :asc)
+    
+    if params[:role].present? && params[:role] != 'all'
+      users = users.where(role: params[:role])
+    end
+
     pagy, records = pagy(users, limit: 15)
 
     users_with_warehouse = records.as_json(only: %i[id email first_name last_name role active rut phone license_type license_expiration birthday]).map do |user_json|
@@ -14,8 +19,9 @@ class UsersController < ApplicationController
 
     render inertia: "Users/Index", props: {
       users: users_with_warehouse,
-      warehouses: Warehouse.active_warehouses.as_json(only: [:id, :name]),
-      pagination: extract_pagy(pagy)
+      warehouses: Warehouse.active_warehouses.as_json(only: [ :id, :name ]),
+      pagination: extract_pagy(pagy),
+      currentRole: params[:role]
     }
   end
 
@@ -68,9 +74,13 @@ class UsersController < ApplicationController
 
   def user_params
     permitted = params.require(:user).permit(
-      :first_name, :last_name, :email, :password, :password_confirmation, :role, :active,
+      :first_name, :last_name, :email, :password, :password_confirmation, :active,
       :rut, :phone, :license_type, :license_expiration, :birthday
     )
+
+    if params.dig(:user, :role).present?
+      permitted[:role] = params.dig(:user, :role)
+    end
 
     if permitted[:password].blank?
       permitted.delete(:password)

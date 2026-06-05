@@ -5,8 +5,8 @@ module Public
         products = company.products.where(active: true, available_in_app: true).includes(:brand, :material)
         products.group_by(&:brand).map do |brand, brand_products|
           {
-            id: brand&.id || 'generic',
-            name: brand&.name || 'Otros',
+            id: brand&.id || "generic",
+            name: brand&.name || "Otros",
             logo_url: brand&.logo&.attached? ? Rails.application.routes.url_helpers.rails_blob_path(brand.logo, only_path: true) : nil,
             products: brand_products.map do |p|
               {

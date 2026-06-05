@@ -8,14 +8,14 @@ class Api::V1::GeocodingController < ApplicationController
 
     url = "https://photon.komoot.io/api/?q=#{URI.encode_www_form_component(query)}&limit=5"
     response = fetch_from_photon(url)
-    results = (response['features'] || []).map do |f|
-      prop = f['properties']
-      coord = f['geometry']['coordinates'] # [lon, lat]
-      display_name = [prop['name'], prop['street'], prop['city'], prop['state']].compact.reject(&:empty?).join(', ')
+    results = (response["features"] || []).map do |f|
+      prop = f["properties"]
+      coord = f["geometry"]["coordinates"] # [lon, lat]
+      display_name = [ prop["name"], prop["street"], prop["city"], prop["state"] ].compact.reject(&:empty?).join(", ")
       {
         lat: coord[1],
         lon: coord[0],
-        display_name: display_name.presence || 'Ubicación Desconocida'
+        display_name: display_name.presence || "Ubicación Desconocida"
       }
     end
 
@@ -29,16 +29,16 @@ class Api::V1::GeocodingController < ApplicationController
 
     url = "https://photon.komoot.io/reverse?lon=#{lon}&lat=#{lat}"
     response = fetch_from_photon(url)
-    feature = (response['features'] || []).first
+    feature = (response["features"] || []).first
     if feature
-      prop = feature['properties']
-      street_parts = [prop['street'], prop['housenumber']].compact.reject(&:empty?).join(' ')
-      name_or_street = street_parts.presence || prop['name']
-      
-      parts = [name_or_street, prop['city'], prop['state']].compact.reject(&:empty?)
-      display_name = parts.join(', ')
-      
-      render json: { display_name: display_name.presence || 'Dirección Desconocida' }
+      prop = feature["properties"]
+      street_parts = [ prop["street"], prop["housenumber"] ].compact.reject(&:empty?).join(" ")
+      name_or_street = street_parts.presence || prop["name"]
+
+      parts = [ name_or_street, prop["city"], prop["state"] ].compact.reject(&:empty?)
+      display_name = parts.join(", ")
+
+      render json: { display_name: display_name.presence || "Dirección Desconocida" }
     else
       render json: {}
     end
@@ -47,12 +47,12 @@ class Api::V1::GeocodingController < ApplicationController
   private
 
   def fetch_from_photon(url)
-    require 'net/http'
-    require 'uri'
+    require "net/http"
+    require "uri"
 
     uri = URI.parse(url)
     request = Net::HTTP::Get.new(uri)
-    request['User-Agent'] = 'StockFlow/1.0 (contacto@stockflow.com)' 
+    request["User-Agent"] = "StockFlow/1.0 (contacto@stockflow.com)"
 
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
       http.request(request)

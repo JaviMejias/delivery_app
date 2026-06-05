@@ -3,8 +3,22 @@ require "prawn"
 require "prawn/table"
 
 class ExportSalesService
-  def initialize(sales)
+  def initialize(sales, theme = 'indigo')
     @sales = sales
+    @theme = theme
+  end
+
+  def theme_hex
+    case @theme.to_s
+    when 'red' then "EF4444"
+    when 'blue' then "3B82F6"
+    when 'amber' then "F59E0B"
+    when 'orange' then "F97316"
+    when 'emerald' then "10B981"
+    when 'rose' then "F43F5E"
+    when 'purple' then "A855F7"
+    else "4F46E5" # indigo default
+    end
   end
 
   def to_xlsx
@@ -14,7 +28,7 @@ class ExportSalesService
     wb.styles do |s|
       borders = { style: :thin, color: "000000", edges: [ :top, :bottom, :left, :right ] }
       header_style = s.add_style(
-        bg_color: "4F46E5",
+        bg_color: theme_hex,
         fg_color: "FFFFFF",
         b: true,
         alignment: { horizontal: :center, vertical: :center },
@@ -59,6 +73,7 @@ class ExportSalesService
 
         @sales.each do |sale|
           items_summary = sale.local_sale_items.map { |item| "#{item.quantity}x #{item.product.name}" }.join(", ")
+          vouchers_summary = sale.local_sale_items.select { |item| item.voucher_code.present? }.map { |item| "#{item.quantity}x #{item.product.name} (Vale: #{item.voucher_code})" }.join(" | ")
 
           sheet.add_row [
             "VTA-#{sale.id.to_s.rjust(4, '0')}",
@@ -69,9 +84,9 @@ class ExportSalesService
             sale.cash_revenue.to_i,
             sale.card_revenue.to_i,
             sale.transfer_revenue.to_i,
-            sale.voucher_revenue.to_i,
+            vouchers_summary.presence || "-",
             sale.total_revenue.to_i
-          ], style: [ cell_style, date_style, cell_style, cell_style, cell_style, currency_style, currency_style, currency_style, currency_style, currency_style ]
+          ], style: [ cell_style, date_style, cell_style, cell_style, cell_style, currency_style, currency_style, currency_style, cell_style, currency_style ]
         end
 
         sheet.add_row [
@@ -79,11 +94,11 @@ class ExportSalesService
           @sales.sum(&:cash_revenue).to_i,
           @sales.sum(&:card_revenue).to_i,
           @sales.sum(&:transfer_revenue).to_i,
-          @sales.sum(&:voucher_revenue).to_i,
+          "",
           @sales.sum(&:total_revenue).to_i
-        ], style: [ nil, nil, nil, nil, total_label_style, total_currency_style, total_currency_style, total_currency_style, total_currency_style, total_currency_style ]
+        ], style: [ nil, nil, nil, nil, total_label_style, total_currency_style, total_currency_style, total_currency_style, nil, total_currency_style ]
 
-        sheet.column_widths 15, 15, 15, 25, 50, 15, 15, 15, 15, 15
+        sheet.column_widths 15, 15, 15, 25, 50, 15, 15, 15, 35, 15
       end
 
       wb.add_worksheet(name: "Detalle de Ítems") do |sheet|
