@@ -5,9 +5,14 @@ import Swal from 'sweetalert2'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import CurrencyInput from '@/components/CurrencyInput'
 import { CustomSelect } from '@/components/CustomSelect'
+import { useSound } from '@/hooks/useSound'
+import { TableFilters } from '@/components/TableFilters'
+import { AnimatedNumber } from '@/components/AnimatedNumber'
+import Modal from '@/components/Modal'
 import BoletaTicket from '@/components/BoletaTicket'
 import PageHeader from '@/components/PageHeader'
-import { Printer, XCircle, Grid, Keyboard, Plus, ArrowLeft, Store, Search } from 'lucide-react'
+import { Printer, XCircle, Grid, Keyboard, Plus, ArrowLeft, Store, Search, Banknote, CreditCard, Landmark, Component } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ProductPrice {
   price_list_id: number
@@ -50,8 +55,8 @@ interface CartItem {
   quantity: number
   returned_empty_quantity: number
   price: number
-  useVoucher: boolean
-  voucherCode: string
+  useVoucher?: boolean
+  voucherCodes?: string[]
 }
 
 interface Props {
@@ -67,6 +72,7 @@ const formatCLP = (amount: number | string) => {
 }
 
 export default function Pos({ warehouses, inventories, price_lists, print_sale, has_sales_today, auth }: any) {
+  const { playSound } = useSound()
   const assignedWarehouseId = auth?.user?.assigned_warehouse_id?.toString()
   const isAdmin = auth?.user?.role === 'admin'
 
@@ -82,6 +88,49 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
 
   const [selectedSaleForTicket, setSelectedSaleForTicket] = useState<any | null>(print_sale || null)
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm')
+  const [printMode, setPrintMode] = useState<'client' | 'store' | 'both' | 'both_paused'>('both_paused')
+  const [forcePrintMode, setForcePrintMode] = useState<'client' | 'store' | null>(null)
+
+  const handlePrint = () => {
+    if (printMode === 'both_paused') {
+      const onAfterFirstPrint = async () => {
+        window.removeEventListener('afterprint', onAfterFirstPrint)
+        
+        // Wait a bit for browser to fully recover from print dialog
+        setTimeout(async () => {
+          const res = await Swal.fire({
+            target: document.querySelector('dialog.native-modal[open]') as HTMLElement || document.body,
+            title: 'Corte el papel ✂️',
+            text: 'Se ha enviado la copia del cliente. Corta el papel en tu impresora térmica y presiona Continuar para enviar la copia de comercio.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir Copia Comercio',
+            cancelButtonText: 'Omitir',
+            confirmButtonColor: '#3b82f6',
+            background: 'var(--sf-dark-card)',
+            color: '#fff'
+          })
+          
+          if (res.isConfirmed) {
+            setForcePrintMode('store')
+            setTimeout(() => {
+              const onAfterSecondPrint = () => {
+                window.removeEventListener('afterprint', onAfterSecondPrint)
+                setForcePrintMode(null)
+              }
+              window.addEventListener('afterprint', onAfterSecondPrint)
+              window.print()
+            }, 500)
+          }
+        }, 300)
+      }
+      
+      window.addEventListener('afterprint', onAfterFirstPrint)
+      window.print()
+    } else {
+      window.print()
+    }
+  }
 
   useEffect(() => {
     if (print_sale) {
@@ -93,6 +142,8 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
   const [card, setCard] = useState('')
   const [transfer, setTransfer] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentTab, setPaymentTab] = useState<'cash' | 'card' | 'transfer' | 'mixed'>('cash')
+  const [cartStep, setCartStep] = useState<'items' | 'payment'>('items')
 
   // Filter inventory by selected warehouse
   const currentInventory = useMemo(() => {
@@ -130,6 +181,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
       newCart[existingIndex].quantity += customQty
       newCart[existingIndex].returned_empty_quantity += customEmpty
       setCart(newCart)
+      playSound('beep')
     } else {
       const newItem: CartItem = {
         cartId: Math.random().toString(36).substring(7),
@@ -138,9 +190,10 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
         returned_empty_quantity: customEmpty,
         price: price,
         useVoucher: false,
-        voucherCode: ''
+        voucherCodes: []
       }
       setCart([...cart, newItem])
+      playSound('beep')
     }
   }
 
@@ -232,6 +285,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
   }
 
   const removeFromCart = (cartId: string) => {
+    playSound('pop')
     setCart(cart.filter(item => item.cartId !== cartId))
   }
 
@@ -254,11 +308,46 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
 
   const totalWithSurcharge = subtotal + cardSurcharge
 
+  const hasMissingVouchers = useMemo(() => {
+    return cart.some(item => {
+      if (!item.useVoucher) return false
+      if (!item.voucherCodes || item.voucherCodes.length < item.quantity) return true
+      return item.voucherCodes.slice(0, item.quantity).some(code => !code || code.trim() === '')
+    })
+  }, [cart])
+
+  useEffect(() => {
+    if (totalWithSurcharge === 0) {
+      setCash('')
+      setCard('')
+      setTransfer('')
+      return
+    }
+    
+    if (paymentTab === 'cash') {
+      setCash(totalWithSurcharge.toString())
+      setCard('')
+      setTransfer('')
+    } else if (paymentTab === 'card') {
+      setCard(totalWithSurcharge.toString())
+      setCash('')
+      setTransfer('')
+    } else if (paymentTab === 'transfer') {
+      setTransfer(totalWithSurcharge.toString())
+      setCash('')
+      setCard('')
+    }
+  }, [paymentTab, totalWithSurcharge])
+
   const currentDeclared = parseFloat(cash || '0') + parseFloat(card || '0') + parseFloat(transfer || '0')
 
   const handleCheckout = () => {
-    if (cart.length === 0) return Swal.fire('Carrito vacío', 'Agrega productos antes de cobrar', 'warning')
+    if (cart.length === 0) {
+      playSound('error')
+      return Swal.fire('Carrito vacío', 'Agrega productos antes de cobrar', 'warning')
+    }
     if (totalWithSurcharge > 0 && currentDeclared < totalWithSurcharge) {
+      playSound('error')
       return Swal.fire('Pago Incompleto', 'El monto ingresado es menor al total de la venta.', 'error')
     }
 
@@ -271,6 +360,7 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
       if (finalCash >= vuelto) {
         finalCash -= vuelto
       } else {
+        playSound('error')
         return Swal.fire('Error de Pago', 'El pago con tarjeta/transferencia supera el total. El vuelto solo se puede dar sobre pagos en efectivo.', 'error')
       }
     }
@@ -291,16 +381,19 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
         quantity: item.quantity,
         returned_empty_quantity: item.returned_empty_quantity,
         subtotal: item.useVoucher ? 0 : (item.price * item.quantity),
-        voucher_code: item.useVoucher ? item.voucherCode : null
+        voucher_code: item.useVoucher ? item.voucherCodes?.filter(c => c.trim() !== '').join(', ') : null
       }))
     }
 
     router.post('/sales/local', payload, {
       onSuccess: (page: any) => {
         if (page.props.flash?.alert) {
+          playSound('error')
           setIsProcessing(false)
+          Swal.fire('Error', page.props.flash.alert, 'error')
           return
         }
+        playSound('kaching')
         Swal.fire({
           icon: 'success', title: 'Venta completada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
           background: 'var(--sf-dark-card)', color: '#fff'
@@ -309,11 +402,13 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
         setCash('')
         setCard('')
         setTransfer('')
+        setCartStep('items')
         setIsProcessing(false)
         
         // Let the controller reload the page with print_sale_id
       },
       onError: (errors: any) => {
+        playSound('error')
         setIsProcessing(false)
         if (errors.voucher_code) {
           Swal.fire('Error de Vale', errors.voucher_code, 'error')
@@ -334,60 +429,56 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
         description="Selecciona la bodega y la lista de precios para comenzar a despachar."
         color="indigo"
         backUrl="/sales/local"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
-          <div className="w-full sm:w-64 shrink-0">
-            <CustomSelect
-              value={warehouseId ? { value: warehouseId, label: warehouses.find(w => w.id.toString() === warehouseId)?.name } : null}
-              onChange={(val: any) => setWarehouseId(val?.value || '')}
-              options={warehouses.map(w => ({ value: w.id.toString(), label: w.name }))}
-              placeholder="Bodega origen..."
-              isDisabled={!isAdmin && !!assignedWarehouseId}
-            />
-          </div>
-          
-          <div className="flex bg-[var(--sf-surface)] rounded-lg p-1 border border-[var(--sf-border)] w-full overflow-x-auto custom-scrollbar">
-            {price_lists.length === 0 ? (
-              <span className="px-3 py-1.5 text-sm text-[var(--sf-text-muted)]">Sin listas de precio</span>
-            ) : (
-              price_lists.map(pl => (
-                <button
-                  key={pl.id}
-                  onClick={() => setPriceListId(pl.id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${priceListId === pl.id ? 'bg-primary-500 text-[var(--sf-text-main)]' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-                >
-                  {pl.name}
-                </button>
-              ))
-            )}
-          </div>
-          
-          {has_sales_today && (
+      />
+
+      <TableFilters>
+        <TableFilters.Select 
+          label="Bodega de Origen"
+          value={warehouseId}
+          onChange={setWarehouseId}
+          options={warehouses.map(w => ({ value: w.id.toString(), label: w.name }))}
+          placeholder="Seleccionar bodega..."
+          className="w-full sm:w-64 shrink-0"
+        />
+        
+        {price_lists.length > 0 && (
+          <TableFilters.Select 
+            label="Lista de Precios"
+            value={priceListId?.toString() || ''}
+            onChange={(val) => setPriceListId(parseInt(val))}
+            options={price_lists.map(pl => ({ value: pl.id.toString(), label: pl.name }))}
+            placeholder="Seleccionar lista..."
+            className="w-full sm:w-64 shrink-0"
+          />
+        )}
+        
+        {has_sales_today && (
+          <div className="ml-auto">
             <Link
               href="/sales/local/closures"
-              className="px-4 py-1.5 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 font-bold rounded-lg border border-orange-500/20 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 font-bold rounded-xl border border-orange-500/20 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-2 h-[42px]"
             >
               🔒 Cierres de Caja
             </Link>
-          )}
-        </div>
-      </PageHeader>
+          </div>
+        )}
+      </TableFilters>
 
       <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-14rem)]">
         
         {/* Catálogo o Formulario */}
         <div className={`flex flex-col bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl overflow-hidden transition-all duration-300 ${inputMode === 'fast' ? 'w-full lg:w-[400px] shrink-0' : 'flex-1'} min-h-[450px] lg:min-h-0`}>
           <div className="p-4 border-b border-[var(--sf-border)] flex flex-wrap justify-between items-center bg-[var(--sf-bg)] gap-4">
-            <div className="flex bg-[var(--sf-surface)] rounded-lg p-1 border border-[var(--sf-border)]">
+            <div className="flex bg-[var(--sf-bg)] rounded-xl p-1.5 border border-[var(--sf-border)] shadow-inner">
               <button
                 onClick={() => setInputMode('grid')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${inputMode === 'grid' ? 'bg-[var(--sf-border)] text-[var(--sf-text-main)] shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${inputMode === 'grid' ? 'bg-[var(--sf-surface)] text-primary-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
               >
                 <Grid size={16} /> Catálogo
               </button>
               <button
                 onClick={() => setInputMode('fast')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${inputMode === 'fast' ? 'bg-[var(--sf-border)] text-[var(--sf-text-main)] shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${inputMode === 'fast' ? 'bg-[var(--sf-surface)] text-primary-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
               >
                 <Keyboard size={16} /> Rápido
               </button>
@@ -424,21 +515,22 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                     <button
                       key={inv.id}
                       onClick={() => addToCart(inv)}
-                      className="flex flex-col text-left p-4 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-bg)] hover:bg-[var(--sf-surface)] hover:border-primary-500/50 transition-all group interactive-card"
+                      className="flex flex-col text-left p-4 rounded-xl border border-white/5 bg-gradient-to-br from-[var(--sf-surface)] to-transparent hover:border-primary-500/40 hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:bg-primary-500/5 transition-all duration-300 group"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[var(--sf-text-muted)] text-xs font-mono">{inv.item.sku}</span>
+                      <div className="flex flex-col items-start gap-1 mb-2 w-full">
+                        <span className="text-[var(--sf-text-muted)] text-[10px] sm:text-xs font-mono group-hover:text-primary-400/70 transition-colors truncate w-full">{inv.item.sku}</span>
                         {inv.item.brand?.name && (
-                          <span className="px-1.5 py-0.5 rounded bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[10px] text-[var(--sf-text-muted)] font-bold uppercase">
+                          <span className="px-1.5 py-0.5 rounded bg-[var(--sf-bg)] border border-[var(--sf-border)] text-[9px] sm:text-[10px] text-[var(--sf-text-muted)] font-bold uppercase tracking-wider truncate max-w-full">
                             {inv.item.brand.name}
                           </span>
                         )}
                       </div>
-                      <div className="text-[var(--sf-text-main)] font-bold mb-2 group-hover:text-primary-400 transition-colors line-clamp-2">{inv.item.name}</div>
-                      <div className="mt-auto flex justify-between items-end w-full">
-                        <div className="text-primary-400 font-black text-lg">{formatCLP(price)}</div>
-                        <div className="text-[var(--sf-text-muted)] text-xs font-medium bg-[var(--sf-dark-border)] px-2 py-1 rounded-md">
-                          Stock: {inv.quantity}
+                      <div className="text-[var(--sf-text-main)] font-bold mb-3 group-hover:text-primary-400 transition-colors line-clamp-2 text-xs sm:text-sm leading-tight">{inv.item.name}</div>
+                      <div className="mt-auto flex flex-col items-start gap-1.5 w-full">
+                        <div className="text-primary-400 font-black text-lg sm:text-xl tracking-tight">{formatCLP(price)}</div>
+                        <div className="text-[var(--sf-text-muted)] text-[10px] sm:text-xs font-medium bg-[var(--sf-bg)] px-2 py-1 rounded-md border border-[var(--sf-border)] flex items-center justify-between w-full">
+                          <span>Stock:</span>
+                          <span className={`font-bold ${inv.quantity <= 5 ? 'text-rose-500' : 'text-[var(--sf-text-main)]'}`}>{inv.quantity}</span>
                         </div>
                       </div>
                     </button>
@@ -521,52 +613,68 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
         </div>
 
         {/* Carrito */}
-        <div className={`flex flex-col bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl overflow-hidden shrink-0 transition-all duration-300 ${inputMode === 'fast' ? 'flex-1' : 'w-full lg:w-[400px]'} min-h-[450px] lg:min-h-0`}>
-          <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-bg)]">
-            <h2 className="font-bold text-[var(--sf-text-main)] text-lg">Detalle de Venta</h2>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-2">
-            {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-[var(--sf-text-muted)] p-6 text-center">
-                <span className="text-4xl mb-2 opacity-50">🛒</span>
-                <p>No hay productos en el carrito</p>
+        <div className={`flex flex-col bg-gradient-to-b from-[var(--sf-surface)] to-[var(--sf-bg)] border border-white/10 rounded-2xl overflow-hidden shrink-0 transition-all duration-300 shadow-2xl ${inputMode === 'fast' ? 'flex-1' : 'w-full lg:w-[400px]'} min-h-[450px] lg:min-h-0 relative z-10`}>
+          {cartStep === 'items' ? (
+            <>
+              <div className="p-3 border-b border-white/5 bg-[var(--sf-surface)]/50 backdrop-blur-sm flex justify-between items-center">
+                <h2 className="font-black text-[var(--sf-text-main)] text-base tracking-tight">Detalle de Venta</h2>
+                <span className="text-xs text-[var(--sf-text-muted)] font-bold px-2 py-0.5 bg-white/5 rounded-full">{cart.length} ítems</span>
               </div>
+              
+              <div className="flex-1 overflow-y-auto p-1.5 animate-fade-in">
+                {cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-[var(--sf-text-muted)] p-6 text-center">
+                    <span className="text-4xl mb-2 opacity-50">🛒</span>
+                    <p>No hay productos en el carrito</p>
+                  </div>
             ) : (
               <div className="space-y-2">
+                <AnimatePresence>
                 {cart.map(item => (
-                  <div key={item.cartId} className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-xl p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="text-[var(--sf-text-main)] font-bold text-sm">{item.product.name}</div>
-                        <div className="text-xs text-[var(--sf-text-muted)]">{formatCLP(item.price)} x {item.quantity}</div>
-                      </div>
-                      <button onClick={() => removeFromCart(item.cartId)} className="text-red-400 hover:text-red-300 w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/10 transition-colors">✕</button>
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    key={item.cartId} 
+                    className="group bg-[var(--sf-bg)] border border-white/5 rounded-lg p-2 hover:border-primary-500/30 transition-colors relative"
+                  >
+                    <button onClick={() => removeFromCart(item.cartId)} className="absolute top-1.5 right-1.5 text-[var(--sf-text-muted)] hover:text-rose-400 hover:bg-rose-500/10 w-6 h-6 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" title="Eliminar del carrito">✕</button>
+                    
+                    <div className="pr-7 mb-2 flex justify-between items-start gap-2">
+                      <div className="text-[var(--sf-text-main)] font-bold text-[13px] leading-tight">{item.product.name}</div>
+                      <div className="text-[13px] font-black text-primary-400 whitespace-nowrap">{formatCLP(item.price)}</div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <div>
-                        <label className="text-[10px] text-[var(--sf-text-muted)] uppercase tracking-wider font-bold block mb-1">Llenos (Venta)</label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center bg-[var(--sf-surface)] border border-white/10 rounded-lg overflow-hidden focus-within:border-primary-500/50 transition-colors">
+                        <span className="px-2 text-[10px] font-bold text-[var(--sf-text-muted)] uppercase bg-black/20 border-r border-white/5 h-full flex items-center">Llenos</span>
+                        <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={() => { playSound('pop'); updateCartItem(item.cartId, 'quantity', Math.max(1, item.quantity - 1)) }} className="px-2 py-1 text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5 transition-colors">−</motion.button>
                         <input
                           type="number" min="1" value={item.quantity}
                           onChange={e => updateCartItem(item.cartId, 'quantity', parseInt(e.target.value) || 1)}
-                          className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary-500"
+                          className="w-10 bg-transparent text-center text-[var(--sf-text-main)] font-bold text-sm px-0 py-1 focus:ring-0 border-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                         />
+                        <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={() => { playSound('pop'); updateCartItem(item.cartId, 'quantity', item.quantity + 1) }} className="px-2 py-1 text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5 transition-colors">+</motion.button>
                       </div>
+                      
                       {item.product.material?.returnable && (
-                        <div>
-                          <label className="text-[10px] text-[var(--sf-text-muted)] uppercase tracking-wider font-bold block mb-1">Vacíos (Recibe)</label>
+                        <div className="flex items-center bg-[var(--sf-surface)] border border-white/10 rounded-lg overflow-hidden focus-within:border-primary-500/50 transition-colors">
+                          <span className="px-2 text-[10px] font-bold text-[var(--sf-text-muted)] uppercase bg-black/20 border-r border-white/5 h-full flex items-center">Vacíos</span>
+                          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={() => { playSound('pop'); updateCartItem(item.cartId, 'returned_empty_quantity', Math.max(0, item.returned_empty_quantity - 1)) }} className="px-2 py-1 text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5 transition-colors">−</motion.button>
                           <input
                             type="number" min="0" value={item.returned_empty_quantity}
                             onChange={e => updateCartItem(item.cartId, 'returned_empty_quantity', parseInt(e.target.value) || 0)}
-                            className="w-full bg-[var(--sf-surface)] border border-[var(--sf-border)] text-[var(--sf-text-main)] text-sm rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary-500"
+                            className="w-10 bg-transparent text-center text-[var(--sf-text-main)] font-bold text-sm px-0 py-1 focus:ring-0 border-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                           />
+                          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={() => { playSound('pop'); updateCartItem(item.cartId, 'returned_empty_quantity', item.returned_empty_quantity + 1) }} className="px-2 py-1 text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5 transition-colors">+</motion.button>
                         </div>
                       )}
                     </div>
 
                     {item.product.accepts_vouchers && (
-                      <div className="pt-2 mt-2 border-t border-[var(--sf-border)] flex items-center justify-between gap-2">
+                      <div className="pt-2 mt-2 border-t border-[var(--sf-border)] flex flex-col gap-2">
                         <label className="flex items-center gap-2 text-xs text-[var(--sf-text-muted)] cursor-pointer">
                           <input
                             type="checkbox"
@@ -574,164 +682,256 @@ export default function Pos({ warehouses, inventories, price_lists, print_sale, 
                             onChange={e => updateCartItem(item.cartId, 'useVoucher', e.target.checked)}
                             className="rounded border-[var(--sf-border)] bg-[var(--sf-surface)] text-primary-500"
                           />
-                          Paga con Vale
+                          Paga con Vale {item.quantity > 1 && `(${item.quantity} vales necesarios)`}
                         </label>
+                        <AnimatePresence>
                         {item.useVoucher && (
-                          <input
-                            type="text" placeholder="Código de Vale"
-                            value={item.voucherCode}
-                            onChange={e => updateCartItem(item.cartId, 'voucherCode', e.target.value)}
-                            className="flex-1 bg-[var(--sf-surface)] border border-primary-500/30 text-primary-300 text-xs rounded-md px-2 py-1 focus:ring-1 focus:ring-primary-500 uppercase"
-                          />
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="flex flex-col gap-1.5 w-full overflow-hidden"
+                          >
+                            {Array.from({ length: item.quantity }).map((_, i) => (
+                              <input
+                                key={i}
+                                type="text" placeholder={`Código de Vale #${i + 1}`}
+                                value={item.voucherCodes?.[i] || ''}
+                                onChange={e => {
+                                  const newCodes = [...(item.voucherCodes || [])]
+                                  newCodes[i] = e.target.value
+                                  updateCartItem(item.cartId, 'voucherCodes', newCodes)
+                                }}
+                                className="w-full bg-[var(--sf-surface)] border border-primary-500/30 text-primary-300 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-primary-500 uppercase"
+                              />
+                            ))}
+                          </motion.div>
                         )}
+                        </AnimatePresence>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
+                </AnimatePresence>
               </div>
             )}
           </div>
 
-          <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-bg)]">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[var(--sf-text-muted)] text-sm font-semibold">SUBTOTAL</span>
-              <span className="text-lg font-bold text-[var(--sf-text-main)]">{formatCLP(subtotal)}</span>
+          <div className="p-3 border-t border-white/10 bg-[var(--sf-surface)]/50 backdrop-blur-sm">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[var(--sf-text-muted)] text-[11px] font-bold tracking-wider">SUBTOTAL</span>
+              <span className="text-sm font-bold text-[var(--sf-text-main)]"><AnimatedNumber value={subtotal} prefix="$" separator="." /></span>
             </div>
             
             {cardSurcharge > 0 && (
-              <div className="flex justify-between items-center mb-3 animate-fade-in">
-                <span className="text-blue-400 text-sm font-medium">Recargo por Tarjeta ({currentWarehouse?.card_surcharge_type === 'percentage' ? `${currentWarehouse.card_surcharge_amount}%` : 'Fijo'})</span>
-                <span className="text-blue-400 font-bold">+{formatCLP(cardSurcharge)}</span>
+              <div className="flex justify-between items-center mb-2 p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 animate-fade-in">
+                <span className="text-blue-400 text-[11px] font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  Recargo Tarjeta ({currentWarehouse?.card_surcharge_type === 'percentage' ? `${currentWarehouse.card_surcharge_amount}%` : 'Fijo'})
+                </span>
+                <span className="text-blue-400 font-bold text-[13px]"><AnimatedNumber value={cardSurcharge} prefix="+$" separator="." /></span>
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-5 pt-3 border-t border-[var(--sf-border)]">
-              <span className="text-[var(--sf-text-main)] font-black uppercase tracking-wider text-sm">TOTAL A PAGAR</span>
-              <span className="text-2xl font-black text-primary-500">{formatCLP(totalWithSurcharge)}</span>
+            <div className="flex justify-between items-center mb-3 pt-2 border-t border-white/10">
+              <span className="text-[var(--sf-text-main)] font-black uppercase tracking-widest text-[11px]">TOTAL A PAGAR</span>
+              <span className="text-2xl font-black text-primary-500 tracking-tighter drop-shadow-md">
+                <AnimatedNumber value={totalWithSurcharge} prefix="$" separator="." />
+              </span>
             </div>
+
+            <button
+              onClick={() => setCartStep('payment')}
+              disabled={cart.length === 0 || hasMissingVouchers}
+              className={`w-full py-2.5 text-white font-black text-sm rounded-xl transition-all flex items-center justify-center gap-2 tracking-widest ${hasMissingVouchers ? 'bg-gray-600 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/25 hover:-translate-y-1'}`}
+            >
+              {hasMissingVouchers ? 'FALTAN CÓDIGOS DE VALE' : '➡️ CONTINUAR AL PAGO'}
+            </button>
+          </div>
+            </>
+          ) : (
+            <>
+              <div className="p-2 border-b border-white/5 bg-[var(--sf-surface)]/50 backdrop-blur-sm animate-fade-in">
+                <button onClick={() => setCartStep('items')} className="text-[var(--sf-text-muted)] hover:text-white flex items-center gap-1.5 font-bold transition-colors py-1 px-2 rounded-lg hover:bg-white/5 text-sm">
+                  <ArrowLeft size={16} /> Volver a los productos
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3 animate-fade-in">
+                <div className="text-center mb-5 mt-2">
+                  <span className="text-[var(--sf-text-muted)] font-black uppercase tracking-widest text-[10px] block mb-1">TOTAL A PAGAR</span>
+                  <span className="text-5xl font-black text-primary-500 tracking-tighter drop-shadow-md">
+                    <AnimatedNumber value={totalWithSurcharge} prefix="$" separator="." />
+                  </span>
+                </div>
 
             {totalWithSurcharge > 0 && (
               <>
-                <div className="space-y-3 mb-6">
-                  <div>
-                    <label className="text-xs font-medium text-[var(--sf-text-muted)] block mb-1">Efectivo Pagado</label>
-                    <CurrencyInput value={cash} onValueChange={setCash} className="text-primary-400 font-bold !py-2 text-sm" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-medium text-[var(--sf-text-muted)] block mb-1">Tarjeta (Suma recargo aut.)</label>
-                      <CurrencyInput value={card} onValueChange={setCard} className="text-blue-400 font-bold !py-2 text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-[var(--sf-text-muted)] block mb-1">Transferencia</label>
-                      <CurrencyInput value={transfer} onValueChange={setTransfer} className="text-purple-400 font-bold !py-2 text-sm" />
-                    </div>
-                  </div>
+                <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-4 shadow-inner overflow-x-auto custom-scrollbar">
+                  <button onClick={() => setPaymentTab('cash')} className={`flex-1 min-w-[70px] py-1.5 px-1 text-[10px] sm:text-xs font-bold rounded transition-all flex flex-col items-center gap-1.5 ${paymentTab === 'cash' ? 'bg-[var(--sf-surface)] text-primary-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5'}`}>
+                    <Banknote size={18} /> Efectivo
+                  </button>
+                  <button onClick={() => setPaymentTab('card')} className={`flex-1 min-w-[70px] py-1.5 px-1 text-[10px] sm:text-xs font-bold rounded transition-all flex flex-col items-center gap-1.5 ${paymentTab === 'card' ? 'bg-[var(--sf-surface)] text-blue-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5'}`}>
+                    <CreditCard size={18} /> Tarjeta
+                  </button>
+                  <button onClick={() => setPaymentTab('transfer')} className={`flex-1 min-w-[70px] py-1.5 px-1 text-[10px] sm:text-xs font-bold rounded transition-all flex flex-col items-center gap-1.5 ${paymentTab === 'transfer' ? 'bg-[var(--sf-surface)] text-purple-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5'}`}>
+                    <Landmark size={18} /> Transf.
+                  </button>
+                  <button onClick={() => setPaymentTab('mixed')} className={`flex-1 min-w-[70px] py-1.5 px-1 text-[10px] sm:text-xs font-bold rounded transition-all flex flex-col items-center gap-1.5 ${paymentTab === 'mixed' ? 'bg-[var(--sf-surface)] text-orange-400 shadow-sm border border-white/5' : 'text-[var(--sf-text-muted)] hover:text-white hover:bg-white/5'}`}>
+                    <Component size={18} /> Mixto
+                  </button>
                 </div>
 
-                <div className={`p-4 rounded-xl mb-6 border ${
+                <div className={`mb-5 ${paymentTab === 'mixed' ? 'grid grid-cols-2 gap-3' : 'space-y-0'}`}>
+                  {(paymentTab === 'cash' || paymentTab === 'mixed') && (
+                    <div className="animate-fade-in col-span-2">
+                      <label className="text-[11px] font-medium text-[var(--sf-text-muted)] block mb-1">Efectivo Pagado</label>
+                      <CurrencyInput value={cash} onValueChange={setCash} className={`text-primary-400 font-bold text-center ${paymentTab === 'mixed' ? '!py-1.5 text-xs' : '!py-2 text-lg'}`} />
+                    </div>
+                  )}
+                  {(paymentTab === 'card' || paymentTab === 'mixed') && (
+                    <div className="animate-fade-in">
+                      <label className="text-[10px] font-medium text-[var(--sf-text-muted)] block mb-1 truncate" title="Tarjeta (Suma recargo aut.)">Tarjeta {paymentTab === 'mixed' && '(+Recargo)'}</label>
+                      <CurrencyInput value={card} onValueChange={setCard} className={`text-blue-400 font-bold text-center ${paymentTab === 'mixed' ? '!py-1.5 text-xs' : '!py-2 text-lg'}`} />
+                    </div>
+                  )}
+                  {(paymentTab === 'transfer' || paymentTab === 'mixed') && (
+                    <div className="animate-fade-in">
+                      <label className="text-[10px] font-medium text-[var(--sf-text-muted)] block mb-1 truncate">Transferencia</label>
+                      <CurrencyInput value={transfer} onValueChange={setTransfer} className={`text-purple-400 font-bold text-center ${paymentTab === 'mixed' ? '!py-1.5 text-xs' : '!py-2 text-lg'}`} />
+                    </div>
+                  )}
+                </div>
+
+                <div className={`p-3 rounded-xl mb-4 border transition-colors duration-300 shadow-inner ${
                   currentDeclared === totalWithSurcharge ? 'bg-emerald-500/10 border-emerald-500/30' :
                   currentDeclared > totalWithSurcharge ? 'bg-blue-500/10 border-blue-500/30' :
-                  'bg-red-500/10 border-red-500/30'
+                  'bg-rose-500/10 border-rose-500/30'
                 }`}>
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm font-bold uppercase tracking-wider ${
+                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 ${
                       currentDeclared === totalWithSurcharge ? 'text-emerald-500' :
                       currentDeclared > totalWithSurcharge ? 'text-blue-500' :
-                      'text-red-500'
+                      'text-rose-500'
                     }`}>
                       {currentDeclared === totalWithSurcharge ? 'Pago Exacto' :
                        currentDeclared > totalWithSurcharge ? 'Vuelto a Entregar:' :
                        'Falta Pagar:'}
                     </span>
-                    <span className={`text-xl font-black ${
-                      currentDeclared === totalWithSurcharge ? 'text-emerald-500' :
-                      currentDeclared > totalWithSurcharge ? 'text-blue-500' :
-                      'text-red-500'
+                    <span className={`text-2xl font-black tracking-tighter ${
+                      currentDeclared === totalWithSurcharge ? 'text-emerald-500 drop-shadow-sm' :
+                      currentDeclared > totalWithSurcharge ? 'text-blue-500 drop-shadow-sm' :
+                      'text-rose-500'
                     }`}>
                       {currentDeclared === totalWithSurcharge ? '✅' :
-                       currentDeclared > totalWithSurcharge ? formatCLP(currentDeclared - totalWithSurcharge) :
-                       formatCLP(totalWithSurcharge - currentDeclared)}
+                       currentDeclared > totalWithSurcharge ? <AnimatedNumber value={currentDeclared - totalWithSurcharge} prefix="$" separator="." /> :
+                       <AnimatedNumber value={totalWithSurcharge - currentDeclared} prefix="$" separator="." />}
                     </span>
                   </div>
                 </div>
               </>
             )}
-
+          </div>
+          <div className="p-3 border-t border-white/10 bg-[var(--sf-surface)]/50 backdrop-blur-sm animate-fade-in">
             <button
               onClick={handleCheckout}
-              disabled={isProcessing || cart.length === 0 || currentDeclared < subtotal}
-              className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-black rounded-xl transition-all shadow-lg shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isProcessing || cart.length === 0 || currentDeclared < totalWithSurcharge || hasMissingVouchers}
+              className={`w-full py-2.5 text-white font-black text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 tracking-widest ${
+                hasMissingVouchers
+                  ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                  : currentDeclared >= totalWithSurcharge && cart.length > 0
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25 hover:-translate-y-1'
+                  : 'bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-rose-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+              }`}
             >
-              {isProcessing ? 'PROCESANDO...' : '💰 COBRAR VENTA'}
+              {isProcessing ? (
+                'PROCESANDO...'
+              ) : hasMissingVouchers ? (
+                <>❌ FALTAN CÓDIGOS DE VALE</>
+              ) : currentDeclared >= totalWithSurcharge && cart.length > 0 ? (
+                <>💸 COBRAR VENTA</>
+              ) : (
+                <>❌ MONTO INCOMPLETO</>
+              )}
             </button>
           </div>
-        </div>
+        </>
+      )}
+    </div>
 
       </div>
 
       {/* Modal for Boleta Ticket Auto-Print */}
-      {selectedSaleForTicket && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col my-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-            <div className="flex flex-wrap justify-between items-center gap-4 p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
-              <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <Printer className="w-5 h-5 text-primary-400" />
-                Venta Procesada
-              </h3>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex bg-[var(--sf-bg)] rounded-lg p-1 border border-[var(--sf-border)]">
-                  <button
-                    onClick={() => setPaperSize('80mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-                  >
-                    80mm
-                  </button>
-                  <button
-                    onClick={() => setPaperSize('58mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-                  >
-                    58mm
-                  </button>
-                </div>
-                
-                <button onClick={() => {
-                  setSelectedSaleForTicket(null)
-                  // clear the print_sale_id from url without reloading
-                  router.get('/sales/local/pos', {}, { preserveState: true })
-                }} className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-colors">
-                  <XCircle size={24} />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 bg-[var(--sf-bg)] flex justify-center custom-scrollbar">
-              <BoletaTicket sale={selectedSaleForTicket} paperSize={paperSize} />
-            </div>
-
-            <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0 flex gap-3">
-              <button
-                onClick={() => {
-                  setSelectedSaleForTicket(null)
-                  router.get('/sales/local/pos', {}, { preserveState: true })
+      <Modal
+        show={!!selectedSaleForTicket}
+        onClose={() => {
+          setSelectedSaleForTicket(null)
+          router.get('/sales/local/pos', {}, { preserveState: true })
+        }}
+        maxWidth="max-w-lg"
+        title={
+          <>
+            <Printer className="w-5 h-5 text-primary-400" />
+            Venta Procesada
+          </>
+        }
+      >
+        <div className="flex flex-col -m-6 max-h-[calc(100vh-8rem)]">
+          <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <CustomSelect
+                options={[
+                  { value: 'client', label: 'Solo Cliente' },
+                  { value: 'store', label: 'Solo Comercio' },
+                  { value: 'both', label: 'Ambas (Tira Continua)' },
+                  { value: 'both_paused', label: 'Ambas (Pausa p/ Cortar)' }
+                ]}
+                value={{ 
+                  value: printMode, 
+                  label: printMode === 'both' ? 'Ambas (Continuo)' : 
+                         printMode === 'both_paused' ? 'Ambas (Pausa)' : 
+                         printMode === 'client' ? 'Solo Cliente' : 'Solo Comercio' 
                 }}
-                className="flex-1 py-2.5 bg-[var(--sf-surface)] hover:bg-[var(--sf-border)] border border-[var(--sf-border)] text-[var(--sf-text-main)] font-semibold rounded-xl transition-colors"
-              >
-                Nueva Venta
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
-              >
-                <Printer size={18} />
-                Imprimir Boleta
-              </button>
+                onChange={(val: any) => setPrintMode(val.value)}
+                isSearchable={false}
+              />
+            </div>
+            <div className="flex-1">
+              <CustomSelect
+                options={[
+                  { value: '80mm', label: '80mm' },
+                  { value: '58mm', label: '58mm' }
+                ]}
+                value={{ value: paperSize, label: paperSize }}
+                onChange={(val: any) => setPaperSize(val.value)}
+                isSearchable={false}
+              />
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+          <div className="p-6 overflow-y-auto flex-1 bg-[var(--sf-bg)] flex justify-center custom-scrollbar">
+            {selectedSaleForTicket && <BoletaTicket sale={selectedSaleForTicket} paperSize={paperSize} printMode={forcePrintMode || (printMode === 'both_paused' ? 'client' : printMode)} />}
+          </div>
+
+          <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0 flex gap-3">
+            <button
+              onClick={() => {
+                setSelectedSaleForTicket(null)
+                router.get('/sales/local/pos', {}, { preserveState: true })
+              }}
+              className="flex-1 py-2.5 bg-[var(--sf-surface)] hover:bg-[var(--sf-border)] border border-[var(--sf-border)] text-[var(--sf-text-main)] font-semibold rounded-xl transition-colors"
+            >
+              Nueva Venta
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
+            >
+              <Printer size={18} />
+              Imprimir Boleta
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AuthenticatedLayout>
   )
 }

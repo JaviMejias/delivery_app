@@ -8,8 +8,11 @@ interface Props {
   hideHeader?: boolean
 }
 
-import { Sparkles, Grid, Banknote, ShoppingCart, Package, Truck, Monitor, Sun, Moon, Building2, Radar, Menu, Palette, Check, Bell, Trash2 } from 'lucide-react'
+import { Sparkles, Grid, Banknote, ShoppingCart, Package, Truck, Monitor, Sun, Moon, Building2, Radar, Menu, Palette, Check, Bell, Trash2, Search, ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
 import { CustomSelect } from '@/components/CustomSelect'
+import { Omnibar } from '@/components/Omnibar'
+import { useSound } from '@/hooks/useSound'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const navigationCategories = [
   {
@@ -116,8 +119,18 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
     flash: { notice?: string; alert?: string };
     app_name: string;
   }
+  const { playSound } = useSound()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sf-sidebar-collapsed') === 'true')
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const currentPath = window.location.pathname
+
+  const toggleCollapse = () => {
+    const newState = !isCollapsed
+    setIsCollapsed(newState)
+    localStorage.setItem('sf-sidebar-collapsed', newState ? 'true' : 'false')
+  }
 
   const filteredCategories = navigationCategories.filter(cat => {
     if (auth.user.role === 'admin') return true
@@ -200,6 +213,52 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 60000)
     return () => clearInterval(interval)
+  }, [])
+
+  // Global Ripple Effect
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      let target = e.target as HTMLElement
+      
+      while (target && target.tagName !== 'BUTTON' && target.tagName !== 'A') {
+        if (target.tagName === 'BODY' || target.classList.contains('button-like')) break
+        target = target.parentElement as HTMLElement
+      }
+      
+      if (target && (target.tagName === 'BUTTON' || target.classList.contains('button-like') || (target.tagName === 'A' && (target.className.includes('bg-') || target.className.includes('btn'))))) {
+        if (target.tagName === 'BUTTON' && !target.className.includes('bg-') && !target.className.includes('hover:bg') && !target.className.includes('border')) return
+        
+        const computedStyle = window.getComputedStyle(target)
+        if (computedStyle.position === 'static') {
+          target.style.position = 'relative'
+        }
+        if (computedStyle.overflow !== 'hidden' && computedStyle.overflow !== 'clip') {
+          target.style.overflow = 'hidden'
+        }
+
+        const rect = target.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+        
+        const ripple = document.createElement('span')
+        ripple.classList.add('ripple-element')
+        
+        const size = Math.max(rect.width, rect.height)
+        ripple.style.width = `${size}px`
+        ripple.style.height = `${size}px`
+        ripple.style.left = `${x - size / 2}px`
+        ripple.style.top = `${y - size / 2}px`
+        
+        target.appendChild(ripple)
+        
+        setTimeout(() => {
+          ripple.remove()
+        }, 600)
+      }
+    }
+    
+    document.addEventListener('click', handleGlobalClick)
+    return () => document.removeEventListener('click', handleGlobalClick)
   }, [])
 
   const markAllRead = async () => {
@@ -333,17 +392,29 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
   }
 
   useEffect(() => {
-    if (flash?.notice) Toast.fire({ icon: 'success', title: flash.notice })
-    if (flash?.alert) Toast.fire({ icon: 'error', title: flash.alert })
-  }, [flash])
+    if (flash?.notice) {
+      playSound('success')
+      Toast.fire({ icon: 'success', title: flash.notice })
+    }
+    if (flash?.alert) {
+      playSound('error')
+      Toast.fire({ icon: 'error', title: flash.alert })
+    }
+  }, [flash, playSound])
 
   useEffect(() => {
     return router.on('success', (event) => {
       const newFlash = event.detail.page.props.flash as any
-      if (newFlash?.notice) Toast.fire({ icon: 'success', title: newFlash.notice })
-      if (newFlash?.alert) Toast.fire({ icon: 'error', title: newFlash.alert })
+      if (newFlash?.notice) {
+        playSound('success')
+        Toast.fire({ icon: 'success', title: newFlash.notice })
+      }
+      if (newFlash?.alert) {
+        playSound('error')
+        Toast.fire({ icon: 'error', title: newFlash.alert })
+      }
     })
-  }, [])
+  }, [playSound])
 
   const getInitials = (name: string) => {
     if (!name) return 'SF'
@@ -353,61 +424,96 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
   }
 
   return (
-    <div className="min-h-screen bg-[var(--sf-bg)] flex text-[var(--sf-text-main)] selection:bg-primary-500/30">
+    <div className="h-screen w-screen overflow-hidden bg-[var(--sf-app-bg)] flex lg:p-4 lg:gap-4 text-[var(--sf-text-main)] selection:bg-primary-500/30">
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity animate-fade-in"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md lg:hidden transition-opacity animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-72 glass border-r border-[var(--sf-glass-border)]
-          transform transition-transform duration-300 ease-in-out flex flex-col
-          lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shrink-0
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          fixed inset-y-0 left-0 z-50 bg-[var(--sf-bg)] border-r border-[var(--sf-border)]
+          transform transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col
+          lg:static lg:bg-transparent lg:border-none lg:translate-x-0 lg:shrink-0
+          ${sidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-72'}
+          ${isCollapsed ? 'lg:w-24' : 'lg:w-64'}
         `}
+        style={{ viewTransitionName: 'sidebar' }}
       >
-        <div className="h-20 flex items-center gap-4 px-6 border-b border-[var(--sf-glass-border)] shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-primary-500/20">
-            <span className="text-[var(--sf-text-main)] font-heading font-bold text-lg tracking-wider">{getInitials(app_name)}</span>
+        <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-6'} border-b border-[var(--sf-glass-border)] shrink-0 transition-all`}>
+          <div className="flex items-center gap-4 overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-primary-500/20 shrink-0">
+              <span className="text-[var(--sf-text-main)] font-heading font-bold text-lg tracking-wider">{getInitials(app_name)}</span>
+            </div>
+            {!isCollapsed && (
+              <h1 className="font-heading font-bold text-xl bg-gradient-to-r from-primary-500 to-primary-400 bg-clip-text text-transparent tracking-tight whitespace-nowrap animate-fade-in">
+                {app_name}
+              </h1>
+            )}
           </div>
-          <div>
-            <h1 className="font-heading font-bold text-xl bg-gradient-to-r from-primary-500 to-primary-400 bg-clip-text text-transparent tracking-tight">
-              {app_name}
-            </h1>
-          </div>
+          
+          <button 
+            onClick={toggleCollapse} 
+            className="hidden lg:flex items-center justify-center w-6 h-6 rounded-md text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:bg-[var(--sf-surface)] transition-colors"
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 scrollbar-hide">
+          {auth.user.role === 'admin' && !isCollapsed && (
+            <button 
+              onClick={() => { setSidebarOpen(false); window.dispatchEvent(new CustomEvent('open-omnibar')) }}
+              className="w-full flex items-center text-left text-sm font-bold text-[var(--sf-text-main)] bg-[var(--sf-surface)] border border-[var(--sf-border)] hover:bg-[var(--sf-surface-hover)] px-4 py-3 rounded-xl transition-colors mb-4 lg:hidden group shadow-sm"
+            >
+              <Search className="w-5 h-5 mr-3 text-[var(--sf-text-muted)] group-hover:text-primary-400 transition-colors" />
+              Buscar...
+            </button>
+          )}
           {filteredCategories.map((cat, index) => {
             const isActive = activeCategory.title === cat.title
             return (
-              <Link
-                key={cat.title}
-                href={cat.items[0].href}
-                className={`
-                  group flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium
-                  transition-all duration-300 relative overflow-hidden animate-slide-up
-                  ${isActive
-                    ? 'text-[var(--sf-primary)] bg-[var(--sf-primary)]/10 border border-[var(--sf-primary)]/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.05)]'
-                    : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:bg-[var(--sf-text-main)]/5 border border-transparent'
-                  }
-                `}
-                style={{ animationDelay: `${index * 30}ms` }}
+              <Link 
+                key={cat.title} 
+                href={cat.items[0].href} 
+                className="block outline-none relative group/link"
+                onMouseEnter={(e) => {
+                  if (!isCollapsed) return
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setTooltipPos({ top: rect.top + rect.height / 2, left: rect.right + 12 })
+                  setHoveredCategory(cat.title)
+                }}
+                onMouseLeave={() => setHoveredCategory(null)}
               >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
-                )}
-                <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(99,102,241,0.3)]' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}>
-                  {cat.icon}
-                </span>
-                <span className="relative z-10">{cat.title}</span>
+                <motion.div
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    group flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5 px-4'} py-3 rounded-xl text-sm font-medium
+                    transition-all duration-300 relative overflow-hidden animate-slide-up
+                    ${isActive
+                      ? 'text-[var(--sf-text-main)] bg-[var(--sf-surface)] border border-[var(--sf-border)] shadow-sm'
+                      : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:bg-[var(--sf-surface-hover)] border border-transparent'
+                    }
+                  `}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary-500 rounded-r-full shadow-[0_0_10px_var(--sf-primary-500)] opacity-80" />
+                  )}
+                  <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(99,102,241,0.3)] text-primary-500' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}>
+                    {cat.icon}
+                  </span>
+                  {!isCollapsed && (
+                    <span className="relative z-10 whitespace-nowrap">{cat.title}</span>
+                  )}
+                </motion.div>
               </Link>
             )
           })}
         </nav>
         <div className="p-4 shrink-0 flex flex-col gap-3">
-          {auth.user.role === 'admin' && auth.available_companies && auth.available_companies.length > 0 && (
+          {auth.user.role === 'admin' && auth.available_companies && auth.available_companies.length > 0 && !isCollapsed && (
             <div className="lg:hidden w-full relative z-[60]">
               <CustomSelect
                 value={auth.current_company ? { value: auth.current_company.id.toString(), label: auth.current_company.name } : null}
@@ -424,42 +530,45 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
             </div>
           )}
 
-          <div className="glass-panel rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <div className={`bg-[var(--sf-surface)] rounded-2xl ${isCollapsed ? 'p-2 justify-center flex-col' : 'p-4 flex-row'} flex items-center gap-3 relative overflow-hidden group border border-[var(--sf-border)] shadow-sm transition-all`}>
+            <div className="absolute inset-0 bg-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-            <div className="relative z-10 w-10 h-10 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-glass-border)] flex items-center justify-center text-[var(--sf-text-main)] text-sm font-bold shadow-inner shrink-0">
+            <div className="relative z-10 w-10 h-10 rounded-full bg-[var(--sf-bg)] border border-[var(--sf-border)] flex items-center justify-center text-[var(--sf-text-main)] text-sm font-bold shadow-inner shrink-0" title={isCollapsed ? `${auth.user.first_name} ${auth.user.last_name}` : undefined}>
               {auth.user.first_name?.[0]}{auth.user.last_name?.[0]}
             </div>
 
-            <div className="relative z-10 flex-1 min-w-0">
-              <p className="text-sm font-bold text-[var(--sf-text-main)] truncate">
-                {auth.user.first_name} {auth.user.last_name}
-              </p>
-              <p className="text-[11px] text-[var(--sf-text-muted)] truncate uppercase tracking-wider mt-0.5">
-                {auth.user.role === 'admin' ? 'Administrador' :
-                  auth.user.role === 'warehouse_keeper' ? 'Bodeguero' : 'Camionero'}
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="relative z-10 flex-1 min-w-0 animate-fade-in">
+                <p className="text-sm font-bold text-[var(--sf-text-main)] truncate">
+                  {auth.user.first_name} {auth.user.last_name}
+                </p>
+                <p className="text-[11px] text-[var(--sf-text-muted)] truncate uppercase tracking-wider mt-0.5">
+                  {auth.user.role === 'admin' ? 'Administrador' :
+                    auth.user.role === 'warehouse_keeper' ? 'Bodeguero' : 'Camionero'}
+                </p>
+              </div>
+            )}
 
             <button
               onClick={() => router.delete('/logout')}
-              className="relative z-10 shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[var(--sf-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              className={`relative z-10 shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[var(--sf-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer ${isCollapsed ? 'mt-2' : ''}`}
               title="Cerrar sesión"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-              </svg>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div 
+        className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[var(--sf-bg)] lg:rounded-[2rem] lg:border lg:border-[var(--sf-border)] lg:shadow-2xl"
+        style={{ viewTransitionName: 'main-container' }}
+      >
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
         {!hideHeader && (
-          <header className="h-20 glass border-b border-[var(--sf-glass-border)] border-t-4 border-t-primary-500 bg-gradient-to-r from-primary-500/5 to-transparent flex items-center px-6 shrink-0 relative z-30 justify-between">
+          <header className="h-20 bg-[var(--sf-bg)]/80 backdrop-blur-xl border-b border-[var(--sf-border)] flex items-center px-6 shrink-0 relative z-30 justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -471,19 +580,30 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
               </button>
 
               <div className="hidden sm:block animate-fade-in">
-                <h2 className="font-heading text-lg font-medium text-[var(--sf-text-muted)]">
-                  Bienvenido de nuevo, <span className="text-[var(--sf-text-main)] font-bold">{auth.user.first_name}</span>
+                <h2 className="font-heading text-lg font-semibold text-[var(--sf-text-main)]">
+                  {auth.user.first_name} {auth.user.last_name}
                 </h2>
                 {auth.current_company && (
-                  <p className="text-xs text-primary-400 font-medium tracking-wide flex items-center gap-1 mt-0.5">
-                    <Building2 className="w-3.5 h-3.5" />
-                    {auth.current_company.name} {auth.current_company.rut ? `(${auth.current_company.rut})` : ''}
+                  <p className="text-xs text-[var(--sf-text-muted)] font-medium tracking-wide flex items-center gap-1.5 mt-0.5">
+                    <Building2 className="w-3.5 h-3.5 text-primary-500" />
+                    {auth.current_company.name}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="flex items-center gap-4">
+              {auth.user.role === 'admin' && (
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-omnibar'))}
+                  className="hidden lg:flex items-center text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] bg-[var(--sf-surface)] hover:bg-[var(--sf-surface-hover)] px-3 py-1.5 rounded-lg border border-[var(--sf-border)] transition-all text-sm gap-2 mr-2 shadow-sm"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Buscar...</span>
+                  <kbd className="ml-2 bg-black/20 border border-[var(--sf-border)] rounded px-1.5 py-0.5 text-[10px] font-mono">Ctrl K</kbd>
+                </button>
+              )}
+
               {auth.user.role === 'admin' && auth.available_companies && auth.available_companies.length > 0 && (
                 <div className="hidden lg:block w-[220px] relative z-[60]">
                   <CustomSelect
@@ -503,7 +623,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
               <div className="relative" ref={notifMenuRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="w-10 h-10 rounded-full glass flex items-center justify-center text-[var(--sf-text-muted)] hover:text-primary-500 transition-all hover:scale-110 relative"
+                  className="w-10 h-10 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-border)] flex items-center justify-center text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:border-[var(--sf-border-hover)] transition-all relative shadow-sm"
                   title="Notificaciones"
                 >
                   <Bell className="w-5 h-5" />
@@ -561,7 +681,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
               <div className="relative" ref={auraMenuRef}>
                 <button
                   onClick={() => setShowAuraMenu(!showAuraMenu)}
-                  className="w-10 h-10 rounded-full glass flex items-center justify-center text-[var(--sf-text-muted)] hover:text-primary-500 transition-all hover:scale-110"
+                  className="w-10 h-10 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-border)] flex items-center justify-center text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:border-[var(--sf-border-hover)] transition-all shadow-sm"
                   title="Cambiar Color (Aura)"
                 >
                   <Palette className="w-5 h-5" />
@@ -591,7 +711,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
 
               <button
                 onClick={cycleTheme}
-                className="w-10 h-10 rounded-full glass flex items-center justify-center text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-all hover:scale-110"
+                className="w-10 h-10 rounded-full bg-[var(--sf-surface)] border border-[var(--sf-border)] flex items-center justify-center text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] hover:border-[var(--sf-border-hover)] transition-all shadow-sm"
                 title={`Tema: ${themePreference === 'system' ? 'Automático (Sistema)' : themePreference === 'light' ? 'Claro' : 'Oscuro'}`}
               >
                 {themePreference === 'system' ? <Monitor className="w-5 h-5" /> : themePreference === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -601,7 +721,7 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
         )}
 
         {!hideHeader && activeCategory.items.length > 1 && (
-          <div className="bg-[var(--sf-bg)]/80 backdrop-blur-md border-b border-[var(--sf-glass-border)] shrink-0 relative z-10">
+          <div className="bg-[var(--sf-bg)]/80 backdrop-blur-xl border-b border-[var(--sf-border)] shrink-0 relative z-10">
             <div className="px-6 lg:px-8">
               <nav className="-mb-px flex space-x-8 overflow-x-auto scrollbar-hide" aria-label="Tabs">
                 {activeCategory.items.map((item) => {
@@ -627,12 +747,34 @@ export default function AuthenticatedLayout({ children, hideHeader = false }: Pr
           </div>
         )}
 
-        <main key={usePage().url} className={`flex-1 overflow-x-hidden overflow-y-auto relative z-0 ${hideHeader ? 'p-0' : 'p-4 lg:p-8'}`}>
-          <div className={`mx-auto w-full animate-slide-up ${hideHeader ? 'h-full' : ''}`}>
-            {children}
-          </div>
-        </main>
+        <AnimatePresence mode="wait">
+          <motion.main 
+            key={usePage().url} 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={`flex-1 overflow-x-hidden overflow-y-auto relative z-0 ${hideHeader ? 'p-0' : 'p-4 lg:p-8'}`}
+          >
+            <div className={`mx-auto w-full ${hideHeader ? 'h-full' : ''}`}>
+              {children}
+            </div>
+          </motion.main>
+        </AnimatePresence>
       </div>
+
+      {auth.user.role === 'admin' && (
+        <Omnibar categories={navigationCategories} />
+      )}
+
+      {isCollapsed && hoveredCategory && (
+        <div 
+          style={{ top: tooltipPos.top, left: tooltipPos.left, transform: 'translateY(-50%)' }}
+          className="fixed px-3 py-1.5 bg-[var(--sf-surface)] border border-[var(--sf-glass-border)] rounded-lg text-[13px] font-bold text-[var(--sf-text-main)] shadow-xl z-[1000] whitespace-nowrap pointer-events-none animate-slide-up glass-panel"
+        >
+          {hoveredCategory}
+        </div>
+      )}
     </div>
   )
 }

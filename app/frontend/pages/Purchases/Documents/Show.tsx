@@ -11,6 +11,7 @@ import { CustomSelect } from '@/components/CustomSelect'
 import CurrencyInput from '@/components/CurrencyInput'
 import { CustomSwitch } from '@/components/CustomSwitch'
 import { CustomDatePicker } from '@/components/CustomDatePicker'
+import Modal from '@/components/Modal'
 
 interface Props {
   document: any
@@ -747,84 +748,81 @@ export default function DocumentShow({ document, products = [], available_invoic
       </div>
 
       {/* Modal for Managing Files */}
-      {isFilesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
-            <div className="flex justify-between items-center p-5 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
-              <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <FileBadge2 className="w-5 h-5 text-primary-400" />
-                Archivos Adjuntos
-              </h3>
-              <button onClick={() => setIsFilesModalOpen(false)} className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-colors">
-                <XCircle size={24} />
-              </button>
-            </div>
-            
-            <div className="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
-              {document.files && document.files.map((f: any) => (
-                <div key={f.id} className="flex items-center justify-between p-4 border border-[var(--sf-border)] bg-[var(--sf-surface)] rounded-xl hover:border-primary-500/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-primary-500/10 rounded-xl text-primary-400">
-                      <FileBadge2 className="w-6 h-6" />
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="font-medium text-[var(--sf-text-main)] text-sm max-w-[200px] sm:max-w-[250px] truncate" title={f.filename}>{f.filename}</p>
-                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-400 hover:underline flex items-center gap-1 mt-1 font-medium">
-                        Abrir documento <ExternalLink size={12} />
-                      </a>
-                    </div>
+      <Modal 
+        show={isFilesModalOpen} 
+        onClose={() => setIsFilesModalOpen(false)} 
+        title={
+          <>
+            <FileBadge2 className="w-5 h-5 text-primary-400" />
+            Archivos Adjuntos
+          </>
+        }
+      >
+        <div className="flex flex-col max-h-[85vh] -m-6">
+          <div className="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+            {document.files && document.files.map((f: any) => (
+              <div key={f.id} className="flex items-center justify-between p-4 border border-[var(--sf-border)] bg-[var(--sf-surface)] rounded-xl hover:border-primary-500/30 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-primary-500/10 rounded-xl text-primary-400">
+                    <FileBadge2 className="w-6 h-6" />
                   </div>
-                  <button
-                    onClick={() => {
-                      Swal.fire({
-                        title: '¿Eliminar archivo?',
-                        text: "Esta acción no se puede deshacer.",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        cancelButtonColor: '#6366f1',
-                        confirmButtonText: 'Sí, eliminar',
-                        cancelButtonText: 'Cancelar',
-                        background: 'var(--sf-dark-card)',
-                        color: '#fff'
-                      }).then((result) => {
-                        if (result.isConfirmed) {
-                          router.delete(`/purchases/documents/${document.id}/delete_file/${f.id}`, {
-                            onSuccess: () => {
-                              if (document.files.length <= 1) {
-                                setIsFilesModalOpen(false)
-                              }
-                            }
-                          })
-                        }
-                      })
-                    }}
-                    className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="overflow-hidden">
+                    <p className="font-medium text-[var(--sf-text-main)] text-sm max-w-[200px] sm:max-w-[250px] truncate" title={f.filename}>{f.filename}</p>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-400 hover:underline flex items-center gap-1 mt-1 font-medium">
+                      Abrir documento <ExternalLink size={12} />
+                    </a>
+                  </div>
                 </div>
-              ))}
-            </div>
+                <button
+                  onClick={() => {
+                    Swal.fire({
+                      title: '¿Eliminar archivo?',
+                      text: "Esta acción no se puede deshacer.",
+                      icon: 'warning',
+                      showCancelButton: true,
+                      confirmButtonColor: '#ef4444',
+                      cancelButtonColor: '#6366f1',
+                      confirmButtonText: 'Sí, eliminar',
+                      cancelButtonText: 'Cancelar',
+                      background: 'var(--sf-dark-card)',
+                      color: '#fff'
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        router.delete(`/purchases/documents/${document.id}/delete_file/${f.id}`, {
+                          onSuccess: () => {
+                            if (document.files.length <= 1) {
+                              setIsFilesModalOpen(false)
+                            }
+                          }
+                        })
+                      }
+                    })
+                  }}
+                  className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
+                  title="Eliminar"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
 
-            <div className="p-5 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
-              >
-                {isUploading ? (
-                  <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
-                ) : (
-                  <Upload size={18} />
-                )}
-                {isUploading ? 'Subiendo archivos...' : 'Agregar más archivos'}
-              </button>
-            </div>
+          <div className="p-5 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
+            >
+              {isUploading ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+              ) : (
+                <Upload size={18} />
+              )}
+              {isUploading ? 'Subiendo archivos...' : 'Agregar más archivos'}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </AuthenticatedLayout>
   )
 }

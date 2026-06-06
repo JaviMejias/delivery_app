@@ -28,3 +28,4 @@ es:
       invalid: "no es válido"
       taken: "ya está en uso"
       confirmation: "no coincide con la confirmación"
+      record_invalid: "La validación falló: %{errors}"

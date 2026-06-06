@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Package, Minus, Plus, AlertCircle, Search, ChevronDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Product {
   id: number
@@ -160,12 +161,18 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
           </button>
           
           <div className={`grid gap-2.5 px-2.5 transition-all duration-300 ease-in-out ${expandedBrands[brand.id] ? 'pb-4 opacity-100 max-h-[2000px]' : 'max-h-0 opacity-0 overflow-hidden m-0 p-0'}`}>
-            {brand.products.map(product => {
+            {brand.products.map((product, i) => {
               const cartItem = cart.find(c => c.product_id === product.id)
               const quantity = cartItem?.quantity || 0
 
               return (
-                <div key={product.id} className="flex items-stretch gap-3 p-3 bg-slate-900 rounded-3xl border border-white/5 shadow-md relative overflow-hidden group">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
+                  key={product.id} 
+                  className="flex items-stretch gap-3 p-3 bg-slate-900 rounded-3xl border border-white/5 shadow-md relative overflow-hidden group"
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   
                   {/* Izquierda: Imagen */}
@@ -215,7 +222,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
           </div>
@@ -230,8 +237,16 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
             <Package className="w-4 h-4 text-primary-400" /> Resumen de tu pedido
           </h4>
           <div className="space-y-2">
+            <AnimatePresence>
             {cart.filter(i => i.quantity > 0).map(item => (
-              <div key={item.product_id} className="flex justify-between items-center text-sm bg-black/20 p-2 rounded-xl border border-white/5">
+              <motion.div 
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                key={item.product_id} 
+                className="flex justify-between items-center text-sm bg-black/20 p-2 rounded-xl border border-white/5"
+              >
                 <span className="text-white font-bold">{item.quantity}x <span className="text-slate-400 font-medium">{item.brand_name} {item.name}</span></span>
                 <button
                   onClick={(e) => { e.preventDefault(); updateCart({ id: item.product_id } as any, item.brand_name, -item.quantity) }}
@@ -239,8 +254,9 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
                 >
                   Quitar
                 </button>
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
         </div>
       )}

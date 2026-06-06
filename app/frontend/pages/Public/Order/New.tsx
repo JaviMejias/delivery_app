@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Head, Link } from '@inertiajs/react'
 import { CheckCircle, Copy, MapPin, Package, LogOut, AlertCircle, Phone } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Swal from 'sweetalert2'
 import MapContainer from '@/components/PublicOrder/MapContainer'
 import OrderForm from '@/components/PublicOrder/OrderForm'
 import { CompanyData, BrandData, CartItem, OrderMode, SubmitState, ProductData } from '@/components/PublicOrder/types'
+import CustomerLayout from '@/layouts/CustomerLayout'
 
 interface Props {
   company: CompanyData
@@ -18,9 +20,9 @@ interface Props {
 export default function PublicOrderNew({ company, brands, current_customer, customer_addresses = [], reorder_data, is_blocked }: Props) {
   if (is_blocked) {
     return (
-      <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden text-slate-200">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative text-slate-200">
         <Head title={`Bloqueado - ${company.name}`} />
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-rose-500/20 rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center">
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-rose-500/20 rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center mt-20">
           <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner">
             <AlertCircle className="w-10 h-10 text-rose-500" />
           </div>
@@ -88,6 +90,7 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
   const typingTimeoutRef = useRef<any>(null)
 
   const mapRef = useRef<any>(null)
+  const isUpdatingLocation = useRef(false)
 
   const touchStartY = useRef(0)
 
@@ -107,6 +110,18 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
     }
     touchStartY.current = 0
   }
+
+  useEffect(() => {
+    if (currentStep !== 0 || current_customer) {
+      if ((window as any).L && !mapRef.current) {
+        setTimeout(initMap, 100)
+        setTimeout(initMap, 500)
+        setTimeout(initMap, 1500)
+      } else if (mapRef.current) {
+        setTimeout(() => mapRef.current.invalidateSize(), 250)
+      }
+    }
+  }, [currentStep, current_customer, isMapExpanded])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -137,53 +152,49 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
 
   const initMap = () => {
     const L = (window as any).L
-    if (!L || mapRef.current) return
-    mapRef.current = L.map('order-map', { zoomControl: false, attributionControl: false }).setView([-33.4489, -70.6693], 15)
+    if (!L || mapRef.current || !document.getElementById('order-map')) return
+
+    try {
+      mapRef.current = L.map('order-map', { zoomControl: false, attributionControl: false }).setView([-33.4489, -70.6693], 15)
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      maxNativeZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors', maxZoom: 20
-    }).addTo(mapRef.current)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapRef.current)
 
-    const center = mapRef.current.getCenter()
-    setLatitude(center.lat)
-    setLongitude(center.lng)
+      const center = mapRef.current.getCenter()
+      setLatitude(center.lat)
+      setLongitude(center.lng)
 
-    mapRef.current.on('moveend', async () => {
-      setHasMovedMap(true)
-      const newCenter = mapRef.current.getCenter()
-      setLatitude(newCenter.lat)
-      setLongitude(newCenter.lng)
-      
-      setIsGeocoding(true)
-      try {
-        const resp = await fetch(`/api/v1/reverse_geocode?lat=${newCenter.lat}&lon=${newCenter.lng}`)
-        const data = await resp.json()
-        if (data && data.display_name) {
-          const parts = data.display_name.split(', ')
-          const shortAddress = parts.slice(0, 3).join(', ')
-          setAddressText(shortAddress)
-          setAddressSuggestions([])
-          setShowSuggestions(false)
-        }
-      } catch (error) {
-        console.error("Geocoding error", error)
-      } finally {
-        setIsGeocoding(false)
-      }
-    })
+      setTimeout(() => mapRef.current?.invalidateSize(), 250)
+      setTimeout(() => mapRef.current?.invalidateSize(), 1000)
 
-    const mapContainer = document.getElementById('order-map')
-    if (mapContainer) {
-      const resizeObserver = new ResizeObserver(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize()
+      mapRef.current.on('moveend', async () => {
+        setHasMovedMap(true)
+        const newCenter = mapRef.current.getCenter()
+        setLatitude(newCenter.lat)
+        setLongitude(newCenter.lng)
+        
+        setIsGeocoding(true)
+        try {
+          const resp = await fetch(`/api/v1/reverse_geocode?lat=${newCenter.lat}&lon=${newCenter.lng}`)
+          const data = await resp.json()
+          if (data && data.display_name) {
+            const parts = data.display_name.split(', ')
+            const shortAddress = parts.slice(0, 3).join(', ')
+            setAddressText(shortAddress)
+            setAddressSuggestions([])
+            setShowSuggestions(false)
+          }
+        } catch (error) {
+          console.error("Geocoding error", error)
+        } finally {
+          setIsGeocoding(false)
         }
       })
-      resizeObserver.observe(mapContainer)
-      // Store observer in a ref so we can disconnect it on unmount if we wanted, but map unmount is fine
-      ;(mapRef.current as any)._resizeObserver = resizeObserver
+    } catch (e) {
+      console.error("Map init error:", e)
     }
   }
 
@@ -483,9 +494,92 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
     )
   }
 
+  if (currentStep === 0 && !current_customer) {
+    return (
+      <div className="min-h-[100dvh] bg-slate-950 flex flex-col justify-center items-center px-4 relative overflow-hidden text-slate-200">
+        <Head title={`Bienvenido - ${company.name}`} />
+        
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 fixed">
+          <motion.div 
+            animate={{ 
+              rotate: [0, 90, 180, 270, 360],
+              scale: [1, 1.2, 1],
+              x: ['-10%', '10%', '-10%']
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute top-0 -left-1/4 w-[40rem] h-[40rem] bg-orange-500/10 rounded-full blur-[100px] mix-blend-screen" 
+          />
+          <motion.div 
+            animate={{ 
+              rotate: [360, 270, 180, 90, 0],
+              scale: [1, 1.3, 1],
+              x: ['10%', '-10%', '10%']
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-0 -right-1/4 w-[45rem] h-[45rem] bg-indigo-500/10 rounded-full blur-[100px] mix-blend-screen" 
+          />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-sm z-10 flex flex-col items-center"
+        >
+          <div className="w-24 h-24 bg-slate-900/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] mb-8 relative">
+             <div className="absolute inset-0 rounded-full bg-orange-500/20 animate-pulse"></div>
+             <span className="text-4xl drop-shadow-lg">🔥</span>
+          </div>
+
+          <h1 className="text-3xl font-black text-white text-center mb-2 tracking-tight">Bienvenido a {company.name}</h1>
+          <p className="text-slate-400 text-center text-sm mb-10 font-medium">
+            Elige cómo continuar para iniciar el pedido
+          </p>
+
+          <div className="w-full bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+            
+            <div className="space-y-4">
+              <Link
+                href={`/order/${company.slug}/auth/login`}
+                className="flex items-center justify-center w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all active:scale-95"
+              >
+                Iniciar Sesión
+              </Link>
+              
+              <Link
+                href={`/order/${company.slug}/auth/register`}
+                className="flex items-center justify-center w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl border border-white/5 transition-all active:scale-95"
+              >
+                Crear una Cuenta
+              </Link>
+
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-[#151c2c] px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500 rounded-full">o</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="flex items-center justify-center w-full py-3.5 bg-transparent hover:bg-white/5 text-slate-400 font-bold rounded-2xl transition-all active:scale-95 border border-transparent hover:border-white/10"
+              >
+                Continuar como Invitado
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
-    <div className="h-[100dvh] bg-slate-950 flex flex-col lg:flex-row font-sans selection:bg-orange-500/30 overflow-hidden">
-      <Head title={`Pedido - ${company.name}`} />
+    <div className="flex-1 flex flex-col lg:flex-row font-sans selection:bg-orange-500/30 overflow-hidden relative">
+      <Head title={`Catálogo - ${company.name}`} />
 
       <MapContainer 
         company={company}
@@ -595,53 +689,14 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
             brands={brands}
             currentStep={currentStep}
             setStep={setCurrentStep}
+            setErrorMsg={setErrorMsg}
+            setSubmitState={setSubmitState}
+            setOrderToken={setOrderToken}
           />
         </div>
       </div>
-      {currentStep === 0 && !current_customer && (
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[100dvh] bg-slate-950 p-6 z-[100] absolute inset-0 animate-in fade-in zoom-in-95 duration-500">
-          <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center border border-white/10 shadow-2xl mb-8 relative">
-             <div className="absolute inset-0 rounded-[2rem] bg-orange-500/20 animate-pulse"></div>
-             <span className="text-4xl">🔥</span>
-          </div>
-          <h1 className="text-3xl font-black text-white text-center mb-2">Bienvenido a {company.name}</h1>
-          <p className="text-slate-400 text-center text-sm max-w-sm mb-10 leading-relaxed">
-            Pide gas de la forma más rápida y sencilla.
-          </p>
-
-          <div className="w-full max-w-sm space-y-4">
-            <Link
-              href={`/order/${company.slug}/auth/login`}
-              className="flex items-center justify-center w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all active:scale-95"
-            >
-              Iniciar Sesión
-            </Link>
-            
-            <Link
-              href={`/order/${company.slug}/auth/register`}
-              className="flex items-center justify-center w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl border border-white/5 transition-all active:scale-95"
-            >
-              Crear una Cuenta
-            </Link>
-
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-slate-950 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">o</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setCurrentStep(1)}
-              className="flex items-center justify-center w-full py-4 bg-transparent hover:bg-white/5 text-slate-400 font-bold rounded-2xl transition-all active:scale-95"
-            >
-              Continuar como Invitado
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+
+PublicOrderNew.layout = (page: any) => <CustomerLayout>{page}</CustomerLayout>

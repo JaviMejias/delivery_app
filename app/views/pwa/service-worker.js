@@ -20,10 +20,17 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/vite-dev/')) return
   if (event.request.headers.get('X-Inertia')) return
   
+  // Ignore non-http requests (e.g., chrome-extension://)
+  if (!event.request.url.startsWith('http')) return
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        return response || fetch(event.request)
+        return response || fetch(event.request).catch(() => {
+          // Gracefully handle failed fetches (e.g. offline, blocked, or missing Leaflet tiles)
+          // without throwing Uncaught Promise errors in the console.
+          return new Response('', { status: 503, statusText: 'Service Unavailable' })
+        })
       })
   )
 })

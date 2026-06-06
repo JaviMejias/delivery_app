@@ -23,6 +23,7 @@ interface MapContainerProps {
   isAddressValid: boolean
   customer_addresses?: any[]
   onSelectAddress?: (addr: any) => void
+  containerRef: React.RefObject<HTMLDivElement>
 }
 
 export default function MapContainer({
@@ -36,12 +37,13 @@ export default function MapContainer({
   setStep,
   isAddressValid,
   customer_addresses = [],
-  onSelectAddress
+  onSelectAddress,
+  containerRef
 }: MapContainerProps) {
   const [isAddressesOpen, setIsAddressesOpen] = useState(false)
 
   return (
-    <div className={`${currentStep === 1 ? 'flex' : 'hidden lg:flex'} flex-col w-full lg:flex-1 transition-all duration-500 ease-in-out shrink-0 h-full z-0 lg:p-6 lg:pb-6 relative`}>
+    <div className={`${currentStep === 1 ? 'flex' : 'hidden lg:flex'} flex-col w-full lg:flex-1 transition-all duration-500 ease-in-out shrink-0 h-[100dvh] z-0 lg:p-6 lg:pb-6 relative`}>
       <div className="absolute top-4 left-4 right-4 z-[2000] shrink-0 pointer-events-none">
         <PublicHeader company={company} current_customer={current_customer} />
       </div>
@@ -91,8 +93,8 @@ export default function MapContainer({
         )}
       </div>
 
-      <div className="relative flex-1 lg:rounded-3xl overflow-hidden lg:border border-white/10 shadow-2xl bg-slate-800">
-        <div id="order-map" className="w-full h-full" />
+      <div className="absolute inset-0 lg:inset-6 rounded-none lg:rounded-3xl overflow-hidden lg:border border-white/10 shadow-2xl bg-slate-800">
+        <div id="order-map" className="absolute inset-0 z-[10]" />
 
         <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-900/60 to-transparent z-[400] pointer-events-none" />
 

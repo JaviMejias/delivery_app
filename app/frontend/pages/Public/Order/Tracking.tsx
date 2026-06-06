@@ -251,6 +251,16 @@ export default function PublicOrderTracking({ token, companyId }: Props) {
         {/* Top Darkening Gradient for Status Visibility */}
         <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-slate-950/80 via-slate-950/40 to-transparent z-10 pointer-events-none" />
 
+        {/* Back Button */}
+        <div className="absolute top-4 left-4 z-[50]">
+          <button 
+            onClick={() => window.history.back()}
+            className="w-10 h-10 bg-slate-900/90 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg active:scale-95 transition-transform"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+        </div>
+
         {loading ? (
           <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm gap-4">
             <div className="w-12 h-12 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />

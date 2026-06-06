@@ -15,6 +15,7 @@
   --color-primary-950: var(--sf-primary-950);
 }
 
+/* Base Tailwind Colors mapping for standard aura */
 :root {
   --sf-primary-50: var(--color-indigo-50);
   --sf-primary-100: var(--color-indigo-100);
@@ -30,31 +31,31 @@
 }
 
 .aura-red {
-  --sf-primary-50: var(--color-red-50);
-  --sf-primary-100: var(--color-red-100);
-  --sf-primary-200: var(--color-red-200);
-  --sf-primary-300: var(--color-red-300);
-  --sf-primary-400: var(--color-red-400);
-  --sf-primary-500: var(--color-red-500);
-  --sf-primary-600: var(--color-red-600);
-  --sf-primary-700: var(--color-red-700);
-  --sf-primary-800: var(--color-red-800);
-  --sf-primary-900: var(--color-red-900);
-  --sf-primary-950: var(--color-red-950);
+  --sf-primary-50: var(--color-rose-50);
+  --sf-primary-100: var(--color-rose-100);
+  --sf-primary-200: var(--color-rose-200);
+  --sf-primary-300: var(--color-rose-300);
+  --sf-primary-400: var(--color-rose-400);
+  --sf-primary-500: var(--color-rose-500);
+  --sf-primary-600: var(--color-rose-600);
+  --sf-primary-700: var(--color-rose-700);
+  --sf-primary-800: var(--color-rose-800);
+  --sf-primary-900: var(--color-rose-900);
+  --sf-primary-950: var(--color-rose-950);
 }
 
 .aura-blue {
-  --sf-primary-50: var(--color-blue-50);
-  --sf-primary-100: var(--color-blue-100);
-  --sf-primary-200: var(--color-blue-200);
-  --sf-primary-300: var(--color-blue-300);
-  --sf-primary-400: var(--color-blue-400);
-  --sf-primary-500: var(--color-blue-500);
-  --sf-primary-600: var(--color-blue-600);
-  --sf-primary-700: var(--color-blue-700);
-  --sf-primary-800: var(--color-blue-800);
-  --sf-primary-900: var(--color-blue-900);
-  --sf-primary-950: var(--color-blue-950);
+  --sf-primary-50: var(--color-sky-50);
+  --sf-primary-100: var(--color-sky-100);
+  --sf-primary-200: var(--color-sky-200);
+  --sf-primary-300: var(--color-sky-300);
+  --sf-primary-400: var(--color-sky-400);
+  --sf-primary-500: var(--color-sky-500);
+  --sf-primary-600: var(--color-sky-600);
+  --sf-primary-700: var(--color-sky-700);
+  --sf-primary-800: var(--color-sky-800);
+  --sf-primary-900: var(--color-sky-900);
+  --sf-primary-950: var(--color-sky-950);
 }
 
 .aura-amber {
@@ -85,44 +86,43 @@
   --sf-primary-950: var(--color-orange-950);
 }
 
-
 /* ========================================
-   StockFlow Premium Design System
+   StockFlow Premium Design System 
+   (Linear / Stripe Aesthetic)
    ======================================== */
 
 :root {
-  /* Core Colors */
+  color-scheme: dark;
+
+  /* Core UI Colors */
   --sf-primary: var(--sf-primary-500);
   --sf-primary-hover: var(--sf-primary-600);
-  --sf-secondary: #0ea5e9;
-  --sf-success: #10b981;
-  --sf-warning: #f59e0b;
-  --sf-danger: #ef4444;
-
-  /* Dark Theme Surfaces (Default) */
+  
+  /* Dark Theme App Shell (The outer background) */
+  --sf-app-bg: #000000;
+  
+  /* Dark Theme Surfaces (The floating inner cards) */
   --sf-bg: #09090b;
-  --sf-surface: #18181b;
-  --sf-surface-hover: #27272a;
-  --sf-border: #27272a;
-  --sf-border-hover: #3f3f46;
+  --sf-surface: #111113;
+  --sf-surface-hover: #1f1f22;
+  --sf-border: #1f1f22;
+  --sf-border-hover: #333338;
 
   /* Dark Theme Text */
-  --sf-text-main: #f8fafc;
-  --sf-text-muted: #94a3b8;
+  --sf-text-main: #fcfcfc;
+  --sf-text-muted: #8b8b93;
 
-  /* Glassmorphism Dark */
-  --sf-glass-bg: rgba(24, 24, 27, 0.85);
-  --sf-glass-panel-bg1: rgba(30, 30, 35, 0.90);
-  --sf-glass-panel-bg2: rgba(20, 20, 25, 0.95);
-  --sf-glass-border: rgba(255, 255, 255, 0.08);
-  --sf-glass-panel-border: rgba(255, 255, 255, 0.12);
-  --sf-glass-shadow: rgba(0, 0, 0, 0.4);
+  /* Glassmorphism Dark (More subtle now) */
+  --sf-glass-bg: rgba(17, 17, 19, 0.7);
+  --sf-glass-panel-bg1: rgba(17, 17, 19, 0.85);
+  --sf-glass-panel-bg2: rgba(9, 9, 11, 0.95);
+  --sf-glass-border: rgba(255, 255, 255, 0.05);
+  --sf-glass-panel-border: rgba(255, 255, 255, 0.08);
+  --sf-glass-shadow: rgba(0, 0, 0, 0.5);
 
-  /* UI Tokens */
-  --sf-radius: 1rem;
-  --sf-transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Retro-compatibility */
+  --sf-radius: 1.5rem;
+  --sf-radius-sm: 0.75rem;
+  
   --sf-dark: var(--sf-bg);
   --sf-dark-card: var(--sf-surface);
   --sf-dark-border: var(--sf-border);
@@ -130,24 +130,29 @@
 }
 
 .theme-light {
+  color-scheme: light;
+
+  /* Light Theme App Shell */
+  --sf-app-bg: #e4e4e7;
+  
   /* Light Theme Surfaces */
-  --sf-bg: #f8fafc;
-  --sf-surface: #ffffff;
-  --sf-surface-hover: #f1f5f9;
-  --sf-border: #e2e8f0;
-  --sf-border-hover: #cbd5e1;
+  --sf-bg: #ffffff;
+  --sf-surface: #fdfdfd;
+  --sf-surface-hover: #f4f4f5;
+  --sf-border: #e4e4e7;
+  --sf-border-hover: #d4d4d8;
 
   /* Light Theme Text */
-  --sf-text-main: #0f172a;
-  --sf-text-muted: #64748b;
+  --sf-text-main: #111113;
+  --sf-text-muted: #52525b;
 
   /* Glassmorphism Light */
-  --sf-glass-bg: rgba(255, 255, 255, 0.90);
-  --sf-glass-panel-bg1: rgba(255, 255, 255, 0.95);
-  --sf-glass-panel-bg2: rgba(248, 250, 252, 0.98);
-  --sf-glass-border: rgba(0, 0, 0, 0.08);
-  --sf-glass-panel-border: rgba(0, 0, 0, 0.10);
-  --sf-glass-shadow: rgba(0, 0, 0, 0.1);
+  --sf-glass-bg: rgba(255, 255, 255, 0.7);
+  --sf-glass-panel-bg1: rgba(255, 255, 255, 0.9);
+  --sf-glass-panel-bg2: rgba(253, 253, 253, 0.98);
+  --sf-glass-border: rgba(0, 0, 0, 0.05);
+  --sf-glass-panel-border: rgba(0, 0, 0, 0.08);
+  --sf-glass-shadow: rgba(0, 0, 0, 0.05);
 
   --sf-dark: var(--sf-bg);
   --sf-dark-card: var(--sf-surface);
@@ -155,73 +160,76 @@
   --sf-text: var(--sf-text-main);
 }
 
-/* Base Styles */
+/* Global resets for modern feel */
+html {
+  scrollbar-color: var(--sf-border-hover) transparent;
+  scrollbar-width: thin;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--sf-bg);
+  background-color: var(--sf-app-bg);
   color: var(--sf-text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: 
-    radial-gradient(circle at 15% 50%, color-mix(in srgb, var(--sf-primary-500) 5%, transparent), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
-  background-attachment: fixed;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  margin: 0;
+  padding: 0;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: 'Outfit', sans-serif;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 /* Glassmorphism Utilities */
 .glass {
   background: var(--sf-glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--sf-glass-border);
 }
 
 .glass-panel {
   background: linear-gradient(145deg, var(--sf-glass-panel-bg1) 0%, var(--sf-glass-panel-bg2) 100%);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
   border: 1px solid var(--sf-glass-panel-border);
-  box-shadow: 0 8px 32px 0 var(--sf-glass-shadow);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 12px 40px -8px var(--sf-glass-shadow);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
 .interactive-card {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--sf-surface);
+  border: 1px solid var(--sf-border);
 }
 
 .interactive-card:hover {
-  transform: translateY(-4px) scale(1.015);
-  box-shadow: 0 15px 45px -5px color-mix(in srgb, var(--sf-primary-500) 15%, var(--sf-glass-shadow));
-  border-color: color-mix(in srgb, var(--sf-primary-500) 40%, var(--sf-glass-panel-border));
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--sf-primary-500) 25%, transparent);
+  border-color: color-mix(in srgb, var(--sf-primary-500) 30%, var(--sf-border));
   z-index: 10;
 }
 
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Animations & View Transitions */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
 
-::-webkit-scrollbar-thumb {
-  background: var(--sf-border-hover);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--sf-text-muted);
-}
-
-/* Animations */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(15px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -230,76 +238,172 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   to { opacity: 1; }
 }
 
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 15px color-mix(in srgb, var(--sf-primary-500) 10%, transparent); }
-  50% { box-shadow: 0 0 25px color-mix(in srgb, var(--sf-primary-500) 30%, transparent); }
-}
-
 .animate-slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.4s ease-out both;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 3s infinite;
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
 
-/* Stagger children animations */
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
 
-/* ========================================
-   Flatpickr Custom Theme Overrides
-   ======================================== */
+/* Global Ripple Effect */
+.ripple-element {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Flatpickr Modern Override */
 .flatpickr-calendar {
   background: var(--sf-glass-panel-bg1) !important;
-  backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(24px) !important;
   border: 1px solid var(--sf-glass-panel-border) !important;
-  box-shadow: 0 8px 32px 0 var(--sf-glass-shadow) !important;
-  border-radius: var(--sf-radius) !important;
+  box-shadow: 0 12px 40px -8px var(--sf-glass-shadow) !important;
+  border-radius: var(--sf-radius-sm) !important;
   color: var(--sf-text-main) !important;
 }
 
 .flatpickr-day {
   color: var(--sf-text-main) !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
 }
+
 .flatpickr-day.selected {
   background: var(--sf-primary) !important;
   border-color: var(--sf-primary) !important;
   color: #ffffff !important;
 }
+
 .flatpickr-day:hover {
   background: var(--sf-surface-hover) !important;
 }
+
 .flatpickr-months .flatpickr-month {
   background: transparent !important;
   color: var(--sf-text-main) !important;
 }
+
 .flatpickr-current-month .flatpickr-monthDropdown-months {
   background: var(--sf-surface) !important;
   color: var(--sf-text-main) !important;
-  appearance: none;
-  padding: 4px;
-  border-radius: 8px;
+  border-radius: 6px;
   max-height: 200px !important;
   overflow-y: auto !important;
+  scrollbar-width: thin;
 }
+
 .flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
   background-color: var(--sf-surface) !important;
 }
+
 .flatpickr-time {
   border-top: 1px solid var(--sf-border) !important;
 }
 
-/* ========================================
-   Map Dark Mode Filter
-   ======================================== */
 .map-dark-mode {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+/* ========================================
+   Modern Web Features (Forms, Dialogs, Scroll)
+   ======================================== */
+
+/* Smart Forms */
+textarea, input:not([type="checkbox"]):not([type="radio"]) {
+  field-sizing: content;
+  min-height: 2.5rem;
+}
+
+input:user-invalid, textarea:user-invalid, select:user-invalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px #ef4444 !important;
+}
+
+/* Scroll-Driven Animations */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-on-scroll {
+  animation: reveal-up linear both;
+  animation-timeline: view();
+  animation-range: entry 5% cover 15%;
+}
+
+/* Native Dialog API */
+dialog.native-modal {
+  background: var(--sf-surface);
+  color: var(--sf-text-main);
+  border: 1px solid var(--sf-border);
+  border-radius: var(--sf-radius);
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.7);
+  padding: 0;
+  width: calc(100% - 2rem);
+  margin: auto;
+  overflow: visible !important;
+  
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              overlay 0.3s allow-discrete,
+              display 0.3s allow-discrete;
+}
+
+dialog.native-modal[open] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+@starting-style {
+  dialog.native-modal[open] {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+}
+
+dialog.native-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  opacity: 0;
+  transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+
+dialog.native-modal[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  dialog.native-modal[open]::backdrop {
+    opacity: 0;
+  }
 }

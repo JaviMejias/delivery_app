@@ -17,7 +17,7 @@ class LocalSaleItem < ApplicationRecord
     if product && price_list && quantity
       product_price = product.product_prices.find_by(price_list_id: price_list_id)
       self.unit_price = product_price&.price || 0.0
-      self.subtotal = self.unit_price * self.quantity
+      self.subtotal = voucher_code.present? ? 0.0 : (self.unit_price * self.quantity)
     end
   end
 

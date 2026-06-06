@@ -124,6 +124,7 @@ Rails.application.routes.draw do
         post :mark_as_read
       end
     end
+    get "search", to: "omni_search#index"
   end
 
   # Treasury

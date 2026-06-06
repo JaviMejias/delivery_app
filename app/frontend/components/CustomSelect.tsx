@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Select, { Props as SelectProps } from 'react-select';
 import AsyncSelect, { AsyncProps } from 'react-select/async';
 
@@ -34,35 +34,62 @@ const customClassNames = {
 export function CustomSelect<Option = unknown, IsMulti extends boolean = false, Group extends import('react-select').GroupBase<Option> = import('react-select').GroupBase<Option>>(
   props: SelectProps<Option, IsMulti, Group>
 ) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const dialog = containerRef.current.closest('dialog');
+      // Si estamos en un dialog, no usamos portal (null) para que se renderice inline
+      // ya que el top-layer oculta el body, y el dialog tiene overflow:visible.
+      // Si no es un dialog (div normal con overflow-hidden), enviamos al body.
+      setPortalTarget(dialog ? null : document.body);
+    }
+  }, []);
+
   return (
-    <Select
-      unstyled
-      classNames={customClassNames}
-      noOptionsMessage={() => "No hay resultados"}
-      loadingMessage={() => "Cargando..."}
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
-      styles={{
-        menuPortal: base => ({ ...base, zIndex: 9999 })
-      }}
-      {...props}
-    />
+    <div ref={containerRef} className="w-full relative">
+      <Select
+        unstyled
+        classNames={customClassNames}
+        noOptionsMessage={() => "No hay resultados"}
+        loadingMessage={() => "Cargando..."}
+        menuPortalTarget={portalTarget || undefined}
+        styles={{
+          menuPortal: base => ({ ...base, zIndex: 9999 })
+        }}
+        {...props}
+      />
+    </div>
   );
 }
 
 export function CustomAsyncSelect<Option = unknown, IsMulti extends boolean = false, Group extends import('react-select').GroupBase<Option> = import('react-select').GroupBase<Option>>(
   props: AsyncProps<Option, IsMulti, Group>
 ) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const dialog = containerRef.current.closest('dialog');
+      setPortalTarget(dialog ? null : document.body);
+    }
+  }, []);
+
   return (
-    <AsyncSelect
-      unstyled
-      classNames={customClassNames}
-      noOptionsMessage={() => "No hay resultados"}
-      loadingMessage={() => "Cargando..."}
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
-      styles={{
-        menuPortal: base => ({ ...base, zIndex: 9999 })
-      }}
-      {...props}
-    />
+    <div ref={containerRef} className="w-full relative">
+      <AsyncSelect
+        unstyled
+        classNames={customClassNames}
+        noOptionsMessage={() => "No hay resultados"}
+        loadingMessage={() => "Cargando..."}
+        menuPortalTarget={portalTarget || undefined}
+        styles={{
+          menuPortal: base => ({ ...base, zIndex: 9999 })
+        }}
+        {...props}
+      />
+    </div>
   );
 }

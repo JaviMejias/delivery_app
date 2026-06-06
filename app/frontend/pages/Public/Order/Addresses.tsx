@@ -1,8 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
-import { MapPin, ArrowLeft, Plus, Trash2, Home, Navigation, CheckCircle, Star, Pen } from 'lucide-react'
+import { MapPin, ArrowLeft, Plus, Trash2, Home, Navigation, CheckCircle, Star, Pen, Map } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Swal from 'sweetalert2'
 import PublicHeader from '@/components/PublicOrder/PublicHeader'
+import CustomerLayout from '@/layouts/CustomerLayout'
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+}
 
 interface Address {
   id: number
@@ -91,7 +106,7 @@ export default function Addresses({ company, current_customer, addresses }: any)
   }, [])
 
   useEffect(() => {
-    if (isAdding && mapRef.current) {
+    if (mapRef.current) {
       setTimeout(() => {
         mapRef.current.invalidateSize()
       }, 100)
@@ -274,7 +289,7 @@ export default function Addresses({ company, current_customer, addresses }: any)
   }
 
   return (
-    <div className="h-[100dvh] bg-slate-950 flex flex-col font-sans selection:bg-orange-500/30 overflow-hidden">
+    <div className="flex-1 flex flex-col font-sans selection:bg-orange-500/30 relative">
       <Head title={`Mis Direcciones - ${company.name}`} />
 
       {/* Global Header */}
@@ -284,7 +299,7 @@ export default function Addresses({ company, current_customer, addresses }: any)
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
         {/* Map Area (Top on Mobile, Full left on Desktop) */}
-        <div className={`${isAdding ? 'flex' : 'hidden lg:flex'} flex-col w-full h-[40dvh] lg:h-full lg:flex-1 transition-all duration-500 ease-in-out shrink-0 z-0 lg:px-6 lg:pb-6 relative`}>
+        <div className={`${isAdding ? 'block' : 'hidden lg:block'} w-full h-[40dvh] lg:h-auto lg:flex-1 self-stretch min-h-[40dvh] lg:min-h-0 transition-all duration-500 ease-in-out shrink-0 z-0 relative`}>
           <div className="lg:hidden absolute top-4 left-4 z-[2000]">
           <button 
             onClick={() => setIsAdding(false)}
@@ -294,8 +309,8 @@ export default function Addresses({ company, current_customer, addresses }: any)
           </button>
         </div>
 
-        <div className="relative flex-1 lg:rounded-3xl overflow-hidden lg:border border-white/10 shadow-2xl bg-slate-800">
-          <div id="address-map" className="w-full h-full" />
+        <div className="absolute inset-0 lg:inset-6 lg:top-6 lg:rounded-3xl overflow-hidden lg:border border-white/10 shadow-2xl bg-slate-800">
+          <div id="address-map" className="absolute inset-0 z-[10]" />
           
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-[400] pointer-events-none mt-2">
             <div className="flex flex-col items-center relative">
@@ -353,94 +368,117 @@ export default function Addresses({ company, current_customer, addresses }: any)
 
         <div className="p-6">
           {!isAdding ? (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              {addresses.length === 0 ? (
-                <div className="text-center py-12 px-6 bg-slate-900 rounded-3xl border border-white/5">
-                  <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="w-8 h-8 text-slate-500" />
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key="address-list"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-4"
+              >
+                {addresses.length === 0 ? (
+                  <div className="text-center py-16 px-6 bg-gradient-to-b from-white/[0.04] to-transparent rounded-[2rem] border border-white/[0.08] shadow-2xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
+                    <div className="w-20 h-20 bg-gradient-to-br from-slate-800 to-slate-900 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-inner border border-white/5 relative z-10">
+                      <MapPin className="w-10 h-10 text-slate-500" />
+                    </div>
+                    <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 mb-3 relative z-10">Sin Direcciones</h3>
+                    <p className="text-slate-400 text-sm mb-8 leading-relaxed max-w-sm mx-auto relative z-10">Guarda tus ubicaciones frecuentes para pedir más rápido en el futuro.</p>
+                    <button 
+                      onClick={() => setIsAdding(true)}
+                      className="relative z-10 w-full group overflow-hidden bg-white/5 hover:bg-white/10 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] active:scale-95 border border-white/10 flex items-center justify-center gap-3"
+                    >
+                      <Plus className="w-5 h-5 text-orange-400 group-hover:scale-125 transition-transform" />
+                      Añadir mi primera dirección
+                    </button>
                   </div>
-                  <h3 className="text-white font-bold mb-2">No tienes direcciones guardadas</h3>
-                  <p className="text-slate-400 text-sm mb-6">Guarda tus ubicaciones frecuentes para pedir más rápido en el futuro.</p>
-                  <button 
-                    onClick={() => setIsAdding(true)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-orange-500/20 active:scale-95"
-                  >
-                    Agregar mi primera dirección
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => setIsAdding(true)}
-                    className="w-full bg-slate-900 border border-white/5 hover:border-orange-500/30 p-4 rounded-2xl flex items-center gap-4 group transition-all active:scale-[0.98]"
-                  >
-                    <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
-                      <Plus className="w-6 h-6 text-orange-500" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h4 className="text-white font-bold">Añadir nueva dirección</h4>
-                      <p className="text-xs text-slate-400">Casa, Trabajo, Departamento...</p>
-                    </div>
-                  </button>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => setIsAdding(true)}
+                      className="w-full relative overflow-hidden bg-gradient-to-r from-white/[0.05] to-transparent border border-white/10 hover:border-orange-500/50 p-5 rounded-[2rem] flex items-center gap-5 group transition-all duration-500 active:scale-[0.98] hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.15)]"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/[0.05] to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none" />
+                      <div className="w-14 h-14 bg-orange-500/10 rounded-[1.25rem] flex items-center justify-center group-hover:bg-orange-500 group-hover:shadow-[0_0_20px_rgba(249,115,22,0.5)] transition-all duration-300">
+                        <Plus className="w-6 h-6 text-orange-500 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <h4 className="text-white font-black text-lg group-hover:text-orange-400 transition-colors">Añadir Dirección</h4>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 tracking-wide">Para envíos a casa, trabajo...</p>
+                      </div>
+                    </button>
 
-                  <div className="space-y-3 mt-6">
-                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest pl-2">Mis Direcciones</h3>
+                  <motion.div 
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="space-y-4 mt-8"
+                  >
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
+                      <Map className="w-4 h-4 opacity-70" />
+                      Mis Ubicaciones Guardadas
+                    </h3>
                     {addresses.map((addr: Address) => (
-                      <div key={addr.id} className="bg-slate-900 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4 relative overflow-hidden group hover:border-primary-500/30 transition-colors">
+                      <motion.div variants={itemVariants} key={addr.id} className="relative bg-gradient-to-r from-white/[0.04] to-transparent backdrop-blur-3xl border border-white/[0.08] p-5 rounded-[2rem] flex flex-col sm:flex-row sm:items-center gap-5 overflow-hidden group hover:border-white/[0.15] transition-all duration-500 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.5)] hover:-translate-y-1">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/10 blur-[50px] rounded-bl-full pointer-events-none transition-colors duration-500 group-hover:bg-primary-500/20 opacity-0 group-hover:opacity-100" />
+                        
                         {addr.is_default && (
                           <div className="absolute top-0 right-0 z-10">
-                            <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
-                              Principal
+                            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-900 text-[10px] font-black px-5 py-1.5 rounded-bl-[1.5rem] uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+                              Predeterminada
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-4 w-full sm:w-auto">
-                          <div className="w-12 h-12 bg-primary-500/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-primary-500/20 transition-colors">
-                            <Home className="w-6 h-6 text-primary-400" />
+                        
+                        <div className="flex items-center gap-5 w-full sm:w-auto relative z-10">
+                          <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-primary-500/5 rounded-[1.25rem] flex items-center justify-center flex-shrink-0 group-hover:scale-[1.05] transition-all duration-500 shadow-inner border border-primary-500/20">
+                            <Home className="w-6 h-6 text-primary-400 drop-shadow-md" />
                           </div>
                           <div className="flex-1 pr-2 min-w-0">
-                            <h4 className="text-white font-bold text-lg truncate pr-16 sm:pr-0">{addr.alias}</h4>
-                            <p className="text-sm text-slate-400 line-clamp-1">{addr.address}</p>
+                            <h4 className="text-white font-black text-lg truncate pr-16 sm:pr-0">{addr.alias}</h4>
+                            <p className="text-[13px] text-slate-400 line-clamp-1 font-medium mt-0.5 tracking-wide">{addr.address}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/5 sm:border-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                        <div className="flex items-center justify-end gap-3 w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0 pt-4 sm:pt-0 border-t border-white/5 sm:border-0 relative z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-500">
                           <button 
                             onClick={() => handleSetDefault(addr.id)}
-                            className={`flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 rounded-xl sm:rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+                            className={`flex-1 sm:flex-none h-11 px-4 sm:px-0 sm:w-11 rounded-[1rem] flex items-center justify-center transition-all duration-300 active:scale-95 border ${
                               addr.is_default 
-                                ? 'bg-amber-500/20 text-amber-400' 
-                                : 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
+                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/20' 
+                                : 'bg-white/5 text-slate-400 hover:bg-amber-500/10 hover:text-amber-400 border-white/5 hover:border-amber-500/30'
                             }`}
                             title={addr.is_default ? "Dirección Principal" : "Marcar como Principal"}
                             disabled={addr.is_default}
                           >
-                            <Star className={`w-4 h-4 ${addr.is_default ? 'fill-amber-400' : ''}`} />
-                            <span className="ml-2 text-xs font-bold sm:hidden">{addr.is_default ? 'Principal' : 'Fijar'}</span>
+                            <Star className={`w-5 h-5 ${addr.is_default ? 'fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`} />
+                            <span className="ml-2 text-[11px] font-bold sm:hidden tracking-wider">{addr.is_default ? 'Principal' : 'Fijar Principal'}</span>
                           </button>
                           <button 
                             onClick={() => handleEdit(addr)}
-                            className="flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 bg-primary-500/10 rounded-xl sm:rounded-full flex items-center justify-center text-primary-400 hover:bg-primary-500/20 transition-colors active:scale-95"
+                            className="flex-1 sm:flex-none h-11 px-4 sm:px-0 sm:w-11 bg-white/5 rounded-[1rem] flex items-center justify-center text-primary-400 hover:bg-primary-500 hover:text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 active:scale-95 border border-white/5 hover:border-primary-500"
                             title="Editar"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                            <span className="ml-2 text-xs font-bold sm:hidden">Editar</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            <span className="ml-2 text-[11px] font-bold sm:hidden tracking-wider">Editar</span>
                           </button>
                           <button 
                             onClick={() => handleDelete(addr.id)}
-                            className="flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 bg-rose-500/10 rounded-xl sm:rounded-full flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition-colors active:scale-95"
+                            className="flex-1 sm:flex-none h-11 px-4 sm:px-0 sm:w-11 bg-white/5 rounded-[1rem] flex items-center justify-center text-rose-400 hover:bg-rose-500 hover:text-white hover:shadow-[0_0_20px_rgba(243,24,96,0.3)] transition-all duration-300 active:scale-95 border border-white/5 hover:border-rose-500"
                             title="Eliminar"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            <span className="ml-2 text-xs font-bold sm:hidden">Borrar</span>
+                            <Trash2 className="w-5 h-5" />
+                            <span className="ml-2 text-[11px] font-bold sm:hidden tracking-wider">Borrar</span>
                           </button>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 </>
               )}
-            </div>
+              </motion.div>
+            </AnimatePresence>
           ) : (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex gap-3">
@@ -547,3 +585,5 @@ export default function Addresses({ company, current_customer, addresses }: any)
     </div>
   )
 }
+
+Addresses.layout = (page: any) => <CustomerLayout>{page}</CustomerLayout>

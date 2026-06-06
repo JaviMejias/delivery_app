@@ -11,6 +11,10 @@ import EmptyState from '@/components/EmptyState'
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -70,6 +74,8 @@ interface Props {
     upcoming_birthdays: UserAlert[]
     maintenance_trucks: MaintenanceTruck[]
   }
+  payment_methods: { name: string, value: number, fill: string }[]
+  seven_day_trends: { date: string, ingresos: number, gastos: number }[]
 }
 
 const formatCLP = (amount: number | string) => {
@@ -100,7 +106,7 @@ const formatDate = (dateStr: string) => {
   return `${dd}-${mm}-${yyyy}`
 }
 
-export default function Dashboard({ stats, chart_data, truck_performance, critical_stock, alerts, filters, warehouses }: Props) {
+export default function Dashboard({ stats, chart_data, truck_performance, critical_stock, alerts, filters, warehouses, payment_methods, seven_day_trends }: Props) {
   const { app_name } = usePage().props as any
   const [fromDate, setFromDate] = useState(filters.from)
   const [toDate, setToDate] = useState(filters.to)
@@ -450,6 +456,97 @@ export default function Dashboard({ stats, chart_data, truck_performance, critic
                     </div>
                   )
                 })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* New Advanced Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          {/* Trend Chart (7 days) */}
+          <div className="lg:col-span-2 glass-panel interactive-card rounded-2xl p-6 flex flex-col">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-[var(--sf-text-main)]">Tendencia Últimos 7 Días</h3>
+              <p className="text-xs text-[var(--sf-text-muted)] mt-1">Comparativa de ingresos diarios vs gastos operativos.</p>
+            </div>
+            <div className="flex-1 w-full mt-4 min-h-[250px]">
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={seven_day_trends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'var(--sf-text-muted)', fontSize: 12, fontWeight: 500 }} dy={10} />
+                  <YAxis tickFormatter={(value) => `$${(value/1000)}k`} axisLine={false} tickLine={false} tick={{ fill: 'var(--sf-text-muted)', fontSize: 12 }} />
+                  <Tooltip 
+                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2, strokeDasharray: '3 3' }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="glass-panel p-3 rounded-lg border border-white/10 shadow-2xl">
+                            <p className="font-bold text-[var(--sf-text-main)] mb-2">{label}</p>
+                            {payload.map((entry: any, index: number) => (
+                              <div key={`item-${index}`} className="flex items-center gap-2 text-sm font-medium">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                                <span className="text-[var(--sf-text-muted)] capitalize">{entry.name}:</span>
+                                <span className="text-[var(--sf-text-main)] font-black">{formatCLP(entry.value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
+                  <Line type="monotone" dataKey="ingresos" name="Ingresos" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} animationDuration={1500} />
+                  <Line type="monotone" dataKey="gastos" name="Gastos" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} animationDuration={1500} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Payment Methods Donut */}
+          <div className="glass-panel interactive-card rounded-2xl p-6 flex flex-col">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-[var(--sf-text-main)]">Métodos de Pago</h3>
+              <p className="text-xs text-[var(--sf-text-muted)] mt-1">Distribución de recaudación en el período.</p>
+            </div>
+            <div className="flex-1 w-full mt-4 min-h-[250px] flex items-center justify-center">
+              {payment_methods.length === 0 ? (
+                <div className="text-[var(--sf-text-muted)] opacity-50">Sin recaudación.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={payment_methods}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      animationDuration={1500}
+                    >
+                      {payment_methods.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(0,0,0,0.1)" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="glass-panel p-3 rounded-lg border border-white/10 shadow-2xl">
+                              <p className="font-bold text-[var(--sf-text-main)] mb-1">{payload[0].name}</p>
+                              <p className="text-sm font-black" style={{ color: payload[0].payload.fill }}>
+                                {formatCLP(payload[0].value)}
+                              </p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>

@@ -6,6 +6,7 @@ import Table from '@/components/Table'
 import Pagination from '@/components/Pagination'
 import { TableFilters } from '@/components/TableFilters'
 import { CustomSelect } from '@/components/CustomSelect'
+import Modal from '@/components/Modal'
 import { FileText, Plus, FileBadge2, X, Trash2, Eye, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import { router } from '@inertiajs/react'
@@ -275,107 +276,96 @@ export default function DocumentsIndex({ documents, pagination, currentSearch, s
       </div>
 
       {/* Modal for Creating Draft Document */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-5 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]">
-              <h3 className="text-lg font-semibold text-[var(--sf-text-main)]">Nuevo Documento</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateDraft} className="p-5 space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Asociar a Orden de Compra (Opcional)</label>
-                <CustomSelect
-                  value={newDocData.purchase_order_id ? { 
-                    value: newDocData.purchase_order_id, 
-                    label: `Orden #${newDocData.purchase_order_id.padStart(5, '0')} - ${purchase_orders.find(po => po.id.toString() === newDocData.purchase_order_id)?.supplier?.name || ''}` 
-                  } : null}
-                  onChange={(val: any) => {
-                    const po_id = val?.value || '';
-                    if (po_id) {
-                      const po = purchase_orders.find(po => po.id.toString() === po_id);
-                      setNewDocData({ ...newDocData, purchase_order_id: po_id, supplier_id: po?.supplier_id?.toString() || '' });
-                    } else {
-                      setNewDocData({ ...newDocData, purchase_order_id: '' });
-                    }
-                  }}
-                  options={purchase_orders.map(po => ({ 
-                    value: po.id.toString(), 
-                    label: `Orden #${po.id.toString().padStart(5, '0')} - ${po.supplier?.name} (${formatMoney(parseFloat(po.total))})` 
-                  }))}
-                  placeholder="Seleccionar orden..."
-                  isClearable
-                />
-                <p className="text-xs text-[var(--sf-text-muted)] mt-1">Si seleccionas una orden, se copiarán sus productos y valores automáticamente.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Proveedor (Opcional)</label>
-                <CustomSelect
-                  value={newDocData.supplier_id ? { value: newDocData.supplier_id, label: suppliers.find(s => s.id.toString() === newDocData.supplier_id)?.name } : null}
-                  onChange={(val: any) => setNewDocData({ ...newDocData, supplier_id: val?.value || '' })}
-                  options={suppliers.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.rut})` }))}
-                  placeholder="Seleccionar proveedor..."
-                  isDisabled={!!newDocData.purchase_order_id}
-                  isClearable
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Tipo de Documento</label>
-                <CustomSelect
-                  value={{ 
-                    value: newDocData.document_type, 
-                    label: newDocData.document_type === 'invoice' ? 'Factura Electrónica' : newDocData.document_type === 'credit_note' ? 'Nota de Crédito' : newDocData.document_type === 'dispatch_guide' ? 'Guía de Despacho' : 'Boleta'
-                  }}
-                  onChange={(val: any) => setNewDocData({ ...newDocData, document_type: val?.value || 'invoice', reference_document_id: '' })}
-                  options={[
-                    { value: 'invoice', label: 'Factura Electrónica' },
-                    { value: 'credit_note', label: 'Nota de Crédito' },
-                    { value: 'dispatch_guide', label: 'Guía de Despacho' },
-                    { value: 'receipt', label: 'Boleta' }
-                  ]}
-                />
-              </div>
-
-              {newDocData.document_type === 'credit_note' && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                  <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Factura Asociada</label>
-                  <CustomSelect
-                    value={newDocData.reference_document_id ? { 
-                      value: newDocData.reference_document_id, 
-                      label: `Factura #${available_invoices.find(i => i.id.toString() === newDocData.reference_document_id)?.document_number}`
-                    } : null}
-                    onChange={(val: any) => setNewDocData({ ...newDocData, reference_document_id: val?.value || '' })}
-                    options={available_invoices.filter(i => i.supplier_id.toString() === newDocData.supplier_id).map(i => ({ 
-                      value: i.id.toString(), 
-                      label: `Factura #${i.document_number} (${formatMoney(i.total_amount)})` 
-                    }))}
-                    placeholder="Seleccionar factura..."
-                    isDisabled={!newDocData.supplier_id}
-                    isClearable
-                  />
-                  {!newDocData.supplier_id && (
-                    <p className="text-xs text-amber-500 mt-1">Selecciona un proveedor primero para ver sus facturas.</p>
-                  )}
-                </div>
-              )}
-
-              <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 bg-[var(--sf-surface)] text-[var(--sf-text-main)] border border-[var(--sf-border)] rounded-xl hover:bg-[var(--sf-border)] transition-colors font-medium">
-                  Cancelar
-                </button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium shadow-lg shadow-primary-500/25">
-                  Crear Borrador
-                </button>
-              </div>
-            </form>
+      <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nuevo Documento" maxWidth="max-w-md">
+        <form onSubmit={handleCreateDraft} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Asociar a Orden de Compra (Opcional)</label>
+            <CustomSelect
+              value={newDocData.purchase_order_id ? { 
+                value: newDocData.purchase_order_id, 
+                label: `Orden #${newDocData.purchase_order_id.padStart(5, '0')} - ${purchase_orders.find(po => po.id.toString() === newDocData.purchase_order_id)?.supplier?.name || ''}` 
+              } : null}
+              onChange={(val: any) => {
+                const po_id = val?.value || '';
+                if (po_id) {
+                  const po = purchase_orders.find(po => po.id.toString() === po_id);
+                  setNewDocData({ ...newDocData, purchase_order_id: po_id, supplier_id: po?.supplier_id?.toString() || '' });
+                } else {
+                  setNewDocData({ ...newDocData, purchase_order_id: '' });
+                }
+              }}
+              options={purchase_orders.map(po => ({ 
+                value: po.id.toString(), 
+                label: `Orden #${po.id.toString().padStart(5, '0')} - ${po.supplier?.name} (${formatMoney(parseFloat(po.total))})` 
+              }))}
+              placeholder="Seleccionar orden..."
+              isClearable
+            />
+            <p className="text-xs text-[var(--sf-text-muted)] mt-1">Si seleccionas una orden, se copiarán sus productos y valores automáticamente.</p>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Proveedor (Opcional)</label>
+            <CustomSelect
+              value={newDocData.supplier_id ? { value: newDocData.supplier_id, label: suppliers.find(s => s.id.toString() === newDocData.supplier_id)?.name } : null}
+              onChange={(val: any) => setNewDocData({ ...newDocData, supplier_id: val?.value || '' })}
+              options={suppliers.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.rut})` }))}
+              placeholder="Seleccionar proveedor..."
+              isDisabled={!!newDocData.purchase_order_id}
+              isClearable
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Tipo de Documento</label>
+            <CustomSelect
+              value={{ 
+                value: newDocData.document_type, 
+                label: newDocData.document_type === 'invoice' ? 'Factura Electrónica' : newDocData.document_type === 'credit_note' ? 'Nota de Crédito' : newDocData.document_type === 'dispatch_guide' ? 'Guía de Despacho' : 'Boleta'
+              }}
+              onChange={(val: any) => setNewDocData({ ...newDocData, document_type: val?.value || 'invoice', reference_document_id: '' })}
+              options={[
+                { value: 'invoice', label: 'Factura Electrónica' },
+                { value: 'credit_note', label: 'Nota de Crédito' },
+                { value: 'dispatch_guide', label: 'Guía de Despacho' },
+                { value: 'receipt', label: 'Boleta' }
+              ]}
+            />
+          </div>
+
+          {newDocData.document_type === 'credit_note' && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="block text-sm font-medium text-[var(--sf-text-muted)] mb-1.5">Factura Asociada</label>
+              <CustomSelect
+                value={newDocData.reference_document_id ? { 
+                  value: newDocData.reference_document_id, 
+                  label: `Factura #${available_invoices.find(i => i.id.toString() === newDocData.reference_document_id)?.document_number}`
+                } : null}
+                onChange={(val: any) => setNewDocData({ ...newDocData, reference_document_id: val?.value || '' })}
+                options={available_invoices.filter(i => i.supplier_id.toString() === newDocData.supplier_id).map(i => ({ 
+                  value: i.id.toString(), 
+                  label: `Factura #${i.document_number} (${formatMoney(i.total_amount)})` 
+                }))}
+                placeholder="Seleccionar factura..."
+                isDisabled={!newDocData.supplier_id}
+                isClearable
+              />
+              {!newDocData.supplier_id && (
+                <p className="text-xs text-amber-500 mt-1">Selecciona un proveedor primero para ver sus facturas.</p>
+              )}
+            </div>
+          )}
+
+          <div className="pt-2 flex gap-3">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 bg-[var(--sf-surface)] text-[var(--sf-text-main)] border border-[var(--sf-border)] rounded-xl hover:bg-[var(--sf-border)] transition-colors font-medium">
+              Cancelar
+            </button>
+            <button type="submit" className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium shadow-lg shadow-primary-500/25">
+              Crear Borrador
+            </button>
+          </div>
+        </form>
+      </Modal>
     </AuthenticatedLayout>
   )
 }

@@ -13,6 +13,9 @@ import BoletaTicket from '@/components/BoletaTicket'
 import { formatCLP } from '@/utils/formatters'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { PaymentBreakdownBadge } from '@/components/Badges/PaymentBreakdownBadge'
+import Modal from '@/components/Modal'
+import { CustomSelect } from '@/components/CustomSelect'
+import Swal from 'sweetalert2'
 
 interface Product {
   id: number
@@ -38,6 +41,7 @@ interface LocalSale {
   card_revenue: string
   transfer_revenue: string
   voucher_revenue: string
+  card_surcharge: string
   warehouse: { name: string }
   local_sale_items: LocalSaleItem[]
 }
@@ -70,7 +74,7 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
     if (search) url.searchParams.set('search', search); else url.searchParams.delete('search');
     if (startDate) url.searchParams.set('start_date', startDate); else url.searchParams.delete('start_date');
     if (endDate) url.searchParams.set('end_date', endDate); else url.searchParams.delete('end_date');
-    router.get(url.pathname + url.search, {}, { 
+    router.get(url.pathname + url.search, {}, {
       preserveState: true,
       onFinish: () => setIsLoading(false)
     })
@@ -78,6 +82,49 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
 
   const [selectedSaleForTicket, setSelectedSaleForTicket] = useState<LocalSale | null>(null)
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm')
+  const [printMode, setPrintMode] = useState<'client' | 'store' | 'both' | 'both_paused'>('client')
+  const [forcePrintMode, setForcePrintMode] = useState<'client' | 'store' | null>(null)
+
+  const handlePrint = () => {
+    if (printMode === 'both_paused') {
+      const onAfterFirstPrint = async () => {
+        window.removeEventListener('afterprint', onAfterFirstPrint)
+
+        // Wait a bit for browser to fully recover from print dialog
+        setTimeout(async () => {
+          const res = await Swal.fire({
+            target: document.querySelector('dialog.native-modal[open]') as HTMLElement || document.body,
+            title: 'Corte el papel ✂️',
+            text: 'Se ha enviado la copia del cliente. Corta el papel en tu impresora térmica y presiona Continuar para enviar la copia de comercio.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir Copia Comercio',
+            cancelButtonText: 'Omitir',
+            confirmButtonColor: '#3b82f6',
+            background: 'var(--sf-dark-card)',
+            color: '#fff'
+          })
+
+          if (res.isConfirmed) {
+            setForcePrintMode('store')
+            setTimeout(() => {
+              const onAfterSecondPrint = () => {
+                window.removeEventListener('afterprint', onAfterSecondPrint)
+                setForcePrintMode(null)
+              }
+              window.addEventListener('afterprint', onAfterSecondPrint)
+              window.print()
+            }, 500)
+          }
+        }, 300)
+      }
+
+      window.addEventListener('afterprint', onAfterFirstPrint)
+      window.print()
+    } else {
+      window.print()
+    }
+  }
 
   const pageTotal = sales.reduce((acc, sale) => acc + parseFloat(sale.total_revenue || '0'), 0)
   const pageCash = sales.reduce((acc, sale) => acc + parseFloat(sale.cash_revenue || '0'), 0)
@@ -91,20 +138,20 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
       <Head title="Historial de Ventas Locales" />
 
       <div className="space-y-6">
-        <PageHeader 
+        <PageHeader
           title="Ventas en Local (Bodega)"
           icon={<Store className="w-8 h-8 opacity-80" />}
           description="Historial de ventas realizadas directamente a clientes en la planta."
           color="indigo"
         >
-        <div className="flex gap-3">
-          <Link
-            href="/sales/local/pos"
-            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-[var(--sf-text-main)] font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-colors shadow-lg shadow-primary-500/25 flex items-center gap-2"
-          >
-            🛒 Abrir Punto de Venta
-          </Link>
-        </div>
+          <div className="flex gap-3">
+            <Link
+              href="/sales/local/pos"
+              className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-[var(--sf-text-main)] font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-colors shadow-lg shadow-primary-500/25 flex items-center gap-2"
+            >
+              🛒 Abrir Punto de Venta
+            </Link>
+          </div>
         </PageHeader>
         <TableFilters onApply={applyFilters} isLoading={isLoading}>
           <TableFilters.Search
@@ -125,9 +172,9 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
             onChange={setEndDate}
           />
           <div className="flex items-center ml-2 border-l border-[var(--sf-border)] pl-4">
-            <a 
-              href={`/sales/local?format=xlsx&search=${search || ''}&start_date=${startDate}&end_date=${endDate}`} 
-              onClick={handleExcelClick} 
+            <a
+              href={`/sales/local?format=xlsx&search=${search || ''}&start_date=${startDate}&end_date=${endDate}`}
+              onClick={handleExcelClick}
               className="px-4 py-2 text-sm font-medium bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-lg hover:bg-[var(--sf-surface)] text-[var(--sf-text-main)] transition-colors h-[42px] flex items-center justify-center"
             >
               ⬇️ EXCEL
@@ -148,162 +195,172 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
             </Table.Thead>
             <Table.Tbody>
               {sales.length === 0 ? (
-                <Table.Empty 
-                  title="No hay ventas locales" 
-                  description="No se encontraron ventas registradas en este período." 
-                  colSpan={6} 
+                <Table.Empty
+                  title="No hay ventas locales"
+                  description="No se encontraron ventas registradas en este período."
+                  colSpan={6}
                 />
               ) : (
                 sales.map((sale) => (
                   <Table.Tr key={sale.id}>
                     <Table.Td className="align-top">
-                        <div className="font-bold text-[var(--sf-text-main)] text-lg">VTA-{sale.id.toString().padStart(4, '0')}</div>
-                        <div className="mt-1 text-[10px] uppercase text-primary-400 font-bold mb-2">
-                          {sale.sale_type === 'warehouse' ? 'P. Bodega' : 'P. Mayorista'}
-                        </div>
-                        <button 
-                          onClick={() => setSelectedSaleForTicket(sale)} 
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-medium rounded-lg transition-colors text-xs"
-                        >
-                          <Printer size={14} /> Ver Ticket
-                        </button>
-                        
-                        <div className="md:hidden mt-3 text-xs text-[var(--sf-text-muted)] space-y-1">
-                           <p>Bodega: {sale.warehouse.name}</p>
-                           <p>Fecha: {sale.date.split('-').reverse().join('-')}</p>
-                        </div>
-                      </Table.Td>
-                      <Table.Td className="align-top hidden md:table-cell">
-                        <span className="inline-block px-2.5 py-1 rounded-md bg-[var(--sf-bg)] border border-[var(--sf-border)] text-xs text-[var(--sf-text-muted)]">
-                          {sale.warehouse.name}
-                        </span>
-                      </Table.Td>
-                      <Table.Td className="align-top hidden md:table-cell">
-                        <div className="text-sm text-[var(--sf-text-main)]">{sale.date.split('-').reverse().join('-')}</div>
-                      </Table.Td>
-                      <Table.Td className="align-top">
-                        <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar pr-2">
-                          {sale.local_sale_items.map(item => (
-                            <div key={item.id} className="text-xs">
-                              <span className="font-bold text-primary-400">{item.quantity}x</span>{' '}
-                              <span className="text-[var(--sf-text-main)]">{item.product.name}</span>
-                              {item.returned_empty_quantity > 0 && (
-                                <span className="text-[var(--sf-text-muted)] ml-2">
-                                  (Recibió {item.returned_empty_quantity} vacíos)
-                                </span>
-                              )}
-                              {item.voucher_code && (
-                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono text-[10px]">
-                                  VALE: {item.voucher_code}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </Table.Td>
-                      <Table.Td className="align-top text-right text-xs text-[var(--sf-text-muted)] hidden lg:table-cell">
-                        <PaymentBreakdownBadge 
-                          cashAmount={sale.cash_revenue}
-                          cardAmount={sale.card_revenue}
-                          transferAmount={sale.transfer_revenue}
-                          className="items-end"
-                        />
-                      </Table.Td>
-                      <Table.Td className="align-top text-right font-black text-emerald-400 text-lg">
-                        {formatCLP(sale.total_revenue)}
-                      </Table.Td>
-                    </Table.Tr>
-                  ))
-                )}
-                {sales.length > 0 && (
-                  <Table.Tr className="bg-primary-500/5 border-t-2 border-primary-500/20">
-                    <Table.Td colSpan={4} className="text-right font-bold text-primary-400 py-4 hidden lg:table-cell">
-                      TOTALES VISIBLES:
+                      <div className="font-bold text-[var(--sf-text-main)] text-lg">VTA-{sale.id.toString().padStart(4, '0')}</div>
+                      <div className="mt-1 text-[10px] uppercase text-primary-400 font-bold mb-2">
+                        {sale.sale_type === 'warehouse' ? 'P. Bodega' : 'P. Mayorista'}
+                      </div>
+                      <button
+                        onClick={() => setSelectedSaleForTicket(sale)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-medium rounded-lg transition-colors text-xs"
+                      >
+                        <Printer size={14} /> Ver Ticket
+                      </button>
+
+                      <div className="md:hidden mt-3 text-xs text-[var(--sf-text-muted)] space-y-1">
+                        <p>Bodega: {sale.warehouse.name}</p>
+                        <p>Fecha: {sale.date.split('-').reverse().join('-')}</p>
+                      </div>
                     </Table.Td>
-                    <Table.Td colSpan={2} className="text-right font-bold text-primary-400 py-4 md:hidden">
-                      TOTALES:
+                    <Table.Td className="align-top hidden md:table-cell">
+                      <span className="inline-block px-2.5 py-1 rounded-md bg-[var(--sf-bg)] border border-[var(--sf-border)] text-xs text-[var(--sf-text-muted)]">
+                        {sale.warehouse.name}
+                      </span>
                     </Table.Td>
-                    <Table.Td colSpan={3} className="text-right font-bold text-primary-400 py-4 hidden md:table-cell lg:hidden">
-                      TOTALES:
+                    <Table.Td className="align-top hidden md:table-cell">
+                      <div className="text-sm text-[var(--sf-text-main)]">{sale.date.split('-').reverse().join('-')}</div>
                     </Table.Td>
-                    <Table.Td className="text-right align-top hidden lg:table-cell">
-                      <PaymentBreakdownBadge 
-                        cashAmount={pageCash}
-                        cardAmount={pageCard}
-                        transferAmount={pageTransfer}
-                        className="items-end font-bold"
+                    <Table.Td className="align-top">
+                      <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar pr-2">
+                        {sale.local_sale_items.map(item => (
+                          <div key={item.id} className="text-xs">
+                            <span className="font-bold text-primary-400">{item.quantity}x</span>{' '}
+                            <span className="text-[var(--sf-text-main)]">{item.product.name}</span>
+                            {item.returned_empty_quantity > 0 && (
+                              <span className="text-[var(--sf-text-muted)] ml-2">
+                                (Recibió {item.returned_empty_quantity} vacíos)
+                              </span>
+                            )}
+                            {item.voucher_code && (
+                              <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono text-[10px]">
+                                VALE: {item.voucher_code}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </Table.Td>
+                    <Table.Td className="align-top text-right text-xs text-[var(--sf-text-muted)] hidden lg:table-cell">
+                      <PaymentBreakdownBadge
+                        cashAmount={sale.cash_revenue}
+                        cardAmount={sale.card_revenue}
+                        transferAmount={sale.transfer_revenue}
+                        className="items-end"
                       />
                     </Table.Td>
-                    <Table.Td className="text-right text-lg font-black text-primary-500 align-middle">
-                      {formatCLP(pageTotal)}
+                    <Table.Td className="align-top text-right font-black text-emerald-400 text-lg">
+                      {formatCLP(sale.total_revenue)}
                     </Table.Td>
                   </Table.Tr>
-                )}
-              </Table.Tbody>
-            </Table>
-            {pagination && pagination.pages > 1 && (
-              <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)]">
-                <Pagination pagination={pagination} />
-              </div>
-            )}
+                ))
+              )}
+              {sales.length > 0 && (
+                <Table.Tr className="bg-primary-500/5 border-t-2 border-primary-500/20">
+                  <Table.Td colSpan={4} className="text-right font-bold text-primary-400 py-4 hidden lg:table-cell">
+                    TOTALES VISIBLES:
+                  </Table.Td>
+                  <Table.Td colSpan={2} className="text-right font-bold text-primary-400 py-4 md:hidden">
+                    TOTALES:
+                  </Table.Td>
+                  <Table.Td colSpan={3} className="text-right font-bold text-primary-400 py-4 hidden md:table-cell lg:hidden">
+                    TOTALES:
+                  </Table.Td>
+                  <Table.Td className="text-right align-top hidden lg:table-cell">
+                    <PaymentBreakdownBadge
+                      cashAmount={pageCash}
+                      cardAmount={pageCard}
+                      transferAmount={pageTransfer}
+                      className="items-end font-bold"
+                    />
+                  </Table.Td>
+                  <Table.Td className="text-right text-lg font-black text-primary-500 align-middle">
+                    {formatCLP(pageTotal)}
+                  </Table.Td>
+                </Table.Tr>
+              )}
+            </Table.Tbody>
+          </Table>
+          {pagination && pagination.pages > 1 && (
+            <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)]">
+              <Pagination pagination={pagination} />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Modal for Boleta Ticket */}
-      {selectedSaleForTicket && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[var(--sf-bg)] border border-[var(--sf-border)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col my-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
-            <div className="flex flex-wrap justify-between items-center gap-4 p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0">
-              <h3 className="text-lg font-semibold text-[var(--sf-text-main)] flex items-center gap-2">
-                <Printer className="w-5 h-5 text-primary-400" />
-                Ticket de Venta
-              </h3>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex bg-[var(--sf-bg)] rounded-lg p-1 border border-[var(--sf-border)]">
-                  <button
-                    onClick={() => setPaperSize('80mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '80mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-                  >
-                    80mm
-                  </button>
-                  <button
-                    onClick={() => setPaperSize('58mm')}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${paperSize === '58mm' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)]'}`}
-                  >
-                    58mm
-                  </button>
-                </div>
-                
-                <button onClick={() => setSelectedSaleForTicket(null)} className="text-[var(--sf-text-muted)] hover:text-[var(--sf-text-main)] transition-colors">
-                  <XCircle size={24} />
-                </button>
-              </div>
+      <Modal
+        show={!!selectedSaleForTicket}
+        onClose={() => setSelectedSaleForTicket(null)}
+        maxWidth="max-w-lg"
+        title={
+          <>
+            <Printer className="w-5 h-5 text-primary-400" />
+            Ticket de Venta
+          </>
+        }
+      >
+        <div className="flex flex-col -m-6 max-h-[calc(100vh-8rem)]">
+          <div className="p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)] flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <CustomSelect
+                options={[
+                  { value: 'client', label: 'Solo Cliente' },
+                  { value: 'store', label: 'Solo Comercio' },
+                  { value: 'both', label: 'Ambas (Tira Continua)' },
+                  { value: 'both_paused', label: 'Ambas (Pausa / Cortar)' }
+                ]}
+                value={{
+                  value: printMode,
+                  label: printMode === 'both' ? 'Ambas (Continuo)' :
+                    printMode === 'both_paused' ? 'Ambas (Pausa)' :
+                      printMode === 'client' ? 'Solo Cliente' : 'Solo Comercio'
+                }}
+                onChange={(val: any) => setPrintMode(val.value)}
+                isSearchable={false}
+              />
             </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 bg-[var(--sf-bg)] flex justify-center custom-scrollbar">
-              <BoletaTicket sale={selectedSaleForTicket} paperSize={paperSize} />
-            </div>
-
-            <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0 flex gap-3">
-              <button
-                onClick={() => setSelectedSaleForTicket(null)}
-                className="flex-1 py-2.5 bg-[var(--sf-surface)] hover:bg-[var(--sf-border)] border border-[var(--sf-border)] text-[var(--sf-text-main)] font-semibold rounded-xl transition-colors"
-              >
-                Cerrar
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
-              >
-                <Printer size={18} />
-                Imprimir Ticket
-              </button>
+            <div className="flex-1">
+              <CustomSelect
+                options={[
+                  { value: '80mm', label: '80mm' },
+                  { value: '58mm', label: '58mm' }
+                ]}
+                value={{ value: paperSize, label: paperSize }}
+                onChange={(val: any) => setPaperSize(val.value)}
+                isSearchable={false}
+              />
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+          <div className="p-6 overflow-y-auto flex-1 bg-[var(--sf-bg)] flex justify-center custom-scrollbar">
+            {selectedSaleForTicket && <BoletaTicket sale={selectedSaleForTicket} paperSize={paperSize} printMode={forcePrintMode || (printMode === 'both_paused' ? 'client' : printMode)} />}
+          </div>
+
+          <div className="p-4 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] shrink-0 flex gap-3">
+            <button
+              onClick={() => setSelectedSaleForTicket(null)}
+              className="flex-1 py-2.5 bg-[var(--sf-surface)] hover:bg-[var(--sf-border)] border border-[var(--sf-border)] text-[var(--sf-text-main)] font-semibold rounded-xl transition-colors"
+            >
+              Cerrar
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2"
+            >
+              <Printer size={18} />
+              Imprimir Ticket
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AuthenticatedLayout>
   )
 }

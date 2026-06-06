@@ -53,7 +53,7 @@ export default function PurchaseOrdersIndex({ orders, suppliers, pagination, cur
   const [startDate, setStartDate] = useState(new URLSearchParams(window.location.search).get('start_date') || formatDate(firstDay))
   const [endDate, setEndDate] = useState(new URLSearchParams(window.location.search).get('end_date') || formatDate(today))
 
-  const { handleExcelClick } = useExcelExport()
+  const { getThemeName, handleExcelClick } = useExcelExport()
 
   const applyFilters = () => {
     setIsLoading(true)

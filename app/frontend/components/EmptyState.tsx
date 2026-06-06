@@ -27,7 +27,7 @@ export default function EmptyState({
         <img 
           src={imageSrc} 
           alt={title} 
-          className="w-48 h-48 object-contain relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2"
+          className="w-48 h-48 object-contain relative z-10 drop-shadow-2xl animate-float transition-transform duration-500 group-hover:scale-105"
         />
       </div>
       

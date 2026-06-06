@@ -34,7 +34,7 @@ function Tbody({ children, className = '' }: TableProps) {
 
 function Tr({ children, className = '' }: TableProps) {
   return (
-    <tr className={`hover:bg-[var(--sf-bg)]/50 transition-colors ${className}`}>
+    <tr className={`hover:bg-[var(--sf-bg)]/50 transition-colors animate-on-scroll ${className}`}>
       {children}
     </tr>
   )

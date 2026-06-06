@@ -13,6 +13,7 @@ import { PendingOrder, RadarData } from '@/components/Radar/types'
 import RadarActiveDispatch from '@/components/Radar/RadarActiveDispatch'
 import RadarOrderList from '@/components/Radar/RadarOrderList'
 import RadarOrderModal from '@/components/Radar/RadarOrderModal'
+import { useSound } from '@/hooks/useSound'
 
 const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371;
@@ -51,33 +52,14 @@ export default function DriverRadar() {
   const [isFollowing, setIsFollowing] = useState(true)
   const [isBottomExpanded, setIsBottomExpanded] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
+  const audioEnabledRef = useRef(false)
   
-  const audioCtxRef = useRef<any>(null)
+  const { playSound } = useSound()
 
   const initAudio = () => {
-    try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext
-      if (!audioCtxRef.current && AudioContext) {
-        audioCtxRef.current = new AudioContext()
-      }
-      if (audioCtxRef.current?.state === 'suspended') {
-        audioCtxRef.current.resume()
-      }
-      setAudioEnabled(true)
-      
-      const ctx = audioCtxRef.current
-      if (ctx) {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.frequency.value = 880
-        gain.gain.setValueAtTime(0.1, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.start(ctx.currentTime)
-        osc.stop(ctx.currentTime + 0.1)
-      }
-    } catch (e) { console.log('Audio init failed', e) }
+    playSound('pop')
+    setAudioEnabled(true)
+    audioEnabledRef.current = true
   }
 
   const isFollowingRef = useRef(true)
@@ -92,6 +74,7 @@ export default function DriverRadar() {
   const destMarkerRef = useRef<any>(null)
   const routeLineRef = useRef<any>(null)
   const geoWatchIdRef = useRef<number | null>(null)
+  const previousOrderIds = useRef<Set<number>>(new Set())
 
   const lastKnownPosRef = useRef<{ latitude: number; longitude: number; timestamp: number } | null>(null)
 
@@ -234,6 +217,35 @@ export default function DriverRadar() {
     const L = (window as any).L
     if (!L || !mapRef.current) return
 
+    const currentIds = new Set(radarData.orders.map(o => o.id))
+    
+    // Polling Fallback: Detect if there are NEW orders that weren't here before
+    if (!center && previousOrderIds.current.size > 0) {
+      let hasNewOrder = false
+      radarData.orders.forEach(order => {
+        if (!previousOrderIds.current.has(order.id)) {
+          hasNewOrder = true
+        }
+      })
+      
+      if (hasNewOrder) {
+        if (audioEnabledRef.current) playSound('radar')
+        Swal.fire({
+          icon: 'info',
+          title: '¡Nuevo Pedido Cerca!',
+          text: 'Se ha añadido un nuevo pedido al radar.',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 4000,
+          background: 'var(--sf-glass-panel-bg1)',
+          color: 'var(--sf-text-main)'
+        })
+      }
+    }
+    
+    previousOrderIds.current = currentIds
+
     if (radarData.truck.latitude && radarData.truck.longitude) {
       const truckPos: [number, number] = [radarData.truck.latitude, radarData.truck.longitude]
       const truckIconHtml = `
@@ -306,8 +318,6 @@ export default function DriverRadar() {
       }
     }
 
-    const currentIds = new Set(radarData.orders.map(o => o.id))
-
     Object.keys(orderMarkersRef.current).forEach(idStr => {
       const id = parseInt(idStr)
       if (!currentIds.has(id)) {
@@ -349,33 +359,9 @@ export default function DriverRadar() {
 
   useActionCable('OrdersChannel', (payload) => {
     if (payload.action === 'new_order') {
-      try {
-        if (audioEnabled && audioCtxRef.current) {
-          const ctx = audioCtxRef.current
-          if (ctx.state === 'suspended') ctx.resume()
-          
-          const playTone = (freq: number, startTime: number, duration: number) => {
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
-            osc.type = 'sine'
-            osc.frequency.setValueAtTime(freq, startTime)
-            gain.gain.setValueAtTime(0, startTime)
-            gain.gain.linearRampToValueAtTime(0.8, startTime + 0.05)
-            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
-            osc.connect(gain)
-            gain.connect(ctx.destination)
-            osc.start(startTime)
-            osc.stop(startTime + duration)
-          }
-          const now = ctx.currentTime
-          playTone(880, now, 0.15)
-          playTone(1108.73, now + 0.15, 0.3)
-          playTone(880, now + 0.6, 0.15)
-          playTone(1108.73, now + 0.75, 0.3)
-          playTone(880, now + 1.2, 0.15)
-          playTone(1108.73, now + 1.35, 0.5)
-        }
-      } catch (e) { console.log('Audio blocked', e) }
+      if (audioEnabledRef.current) {
+        playSound('radar')
+      }
 
       Swal.fire({
         icon: 'info',

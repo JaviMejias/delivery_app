@@ -19,7 +19,9 @@ class DashboardAnalyticsService
       chart_data: fetch_chart_data,
       truck_performance: fetch_truck_performance,
       critical_stock: fetch_critical_stock,
-      alerts: fetch_alerts
+      alerts: fetch_alerts,
+      payment_methods: fetch_payment_methods,
+      seven_day_trends: fetch_seven_day_trends
     }
   end
 
@@ -226,5 +228,58 @@ class DashboardAnalyticsService
     @company.users.drivers.active
           .where("license_expiration < ?", Date.current)
           .order(license_expiration: :desc)
+  end
+
+  def fetch_payment_methods
+    # Recaudación de LocalSales
+    local_sales = LocalSale.where(company_id: @company.id, status: "completed")
+                           .where("created_at >= ? AND created_at <= ?", @from_date.beginning_of_day, @to_date.end_of_day)
+    local_sales = local_sales.where(warehouse_id: @warehouse_id) if @warehouse_id
+
+    # Recaudación de RouteSettlements
+    route_settlements = RouteSettlement.where(company_id: @company.id, status: "completed")
+                                       .where("date >= ? AND date <= ?", @from_date, @to_date)
+    route_settlements = route_settlements.joins(:truck).where(trucks: { warehouse_id: @warehouse_id }) if @warehouse_id
+
+    cash = local_sales.sum(:cash_revenue) + route_settlements.sum(:cash_revenue)
+    card = local_sales.sum(:card_revenue) + route_settlements.sum(:card_revenue)
+    transfer = local_sales.sum(:transfer_revenue) + route_settlements.sum(:transfer_revenue)
+    voucher = local_sales.sum(:voucher_revenue) # RouteSettlements no tienen voucher_revenue en este schema
+
+    [
+      { name: "Efectivo", value: cash.to_f, fill: "#10b981" },
+      { name: "Tarjeta", value: card.to_f, fill: "#3b82f6" },
+      { name: "Transferencia", value: transfer.to_f, fill: "#8b5cf6" },
+      { name: "Vale/Voucher", value: voucher.to_f, fill: "#f59e0b" }
+    ].reject { |m| m[:value] == 0 }
+  end
+
+  def fetch_seven_day_trends
+    trends = []
+    7.downto(0) do |i|
+      date = Date.current - i.days
+
+      # Ingresos del día
+      local = LocalSale.where(company_id: @company.id, status: "completed", date: date)
+      local = local.where(warehouse_id: @warehouse_id) if @warehouse_id
+      
+      route = RouteSettlement.where(company_id: @company.id, status: "completed", date: date)
+      route = route.joins(:truck).where(trucks: { warehouse_id: @warehouse_id }) if @warehouse_id
+
+      daily_revenue = local.sum(:total_revenue) + route.sum(:total_revenue)
+
+      # Gastos del día
+      expenses_query = RouteSettlementExpense.joins(:route_settlement)
+                                             .where(route_settlements: { company_id: @company.id, status: "completed", date: date })
+      expenses_query = expenses_query.joins(route_settlement: :truck).where(trucks: { warehouse_id: @warehouse_id }) if @warehouse_id
+      daily_expenses = expenses_query.sum(:amount)
+
+      trends << {
+        date: date.strftime("%d/%m"),
+        ingresos: daily_revenue.to_f,
+        gastos: daily_expenses.to_f
+      }
+    end
+    trends
   end
 end
