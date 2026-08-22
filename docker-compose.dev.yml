@@ -6,7 +6,7 @@ services:
       - db_data_dev:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: stockflow
-      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_PASSWORD: stockflowdbpassword
       POSTGRES_DB: stock_flow_development
     ports:
       - "5433:5432"
@@ -28,7 +28,7 @@ services:
       - RAILS_ENV=development
       - POSTGRES_HOST=db
       - POSTGRES_USER=stockflow
-      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_PASSWORD=stockflowdbpassword
       - APP_NAME=${APP_NAME:-StockFlow}
     command: bash -c "bundle install && npm install && gem install foreman && bin/rails db:prepare && bin/dev"
 

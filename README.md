@@ -26,21 +26,48 @@ StockFlow es una aplicación "Monolítica Moderna" que usa las siguientes tecnol
 ## 🚀 Guía de Instalación Rápida (Local)
 
 ### Pre-requisitos
+
 Asegúrate de tener instalados:
+
 * Ruby 3.x
 * PostgreSQL
 * Node.js (v18 o superior) y npm
 
+### Configuración de PostgreSQL
+
+La configuración de desarrollo utiliza las siguientes credenciales locales:
+
+* Usuario: `stockflow`
+* Contraseña: `stockflowdbpassword`
+* Host: `localhost`
+* Puerto: `5432`
+
+Estas credenciales son exclusivamente para desarrollo y no deben utilizarse en producción. Crea el usuario antes de preparar la aplicación:
+
+```bash
+sudo -u postgres psql -c "CREATE ROLE stockflow WITH LOGIN CREATEDB PASSWORD 'stockflowdbpassword';"
+```
+
+Si el usuario ya existe, puedes actualizar su contraseña:
+
+```bash
+sudo -u postgres psql -c "ALTER ROLE stockflow WITH LOGIN CREATEDB PASSWORD 'stockflowdbpassword';"
+```
+
+Puedes usar otras credenciales definiendo `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER` y `POSTGRES_PASSWORD` en tu entorno.
+
 ### Pasos
+
 1. Clona el repositorio e ingresa a la carpeta del proyecto.
 2. Instala las dependencias de Ruby y JavaScript:
    ```bash
    bundle install
    npm install
+   gem install foreman
    ```
 3. Prepara la base de datos:
    ```bash
-   rails db:create db:migrate db:seed
+   bin/rails db:create db:migrate db:seed
    ```
 4. Inicia el servidor de desarrollo:
    ```bash
@@ -50,26 +77,38 @@ Asegúrate de tener instalados:
 
 ---
 
-## 🐳 Despliegue Fácil con Docker
+## 🐳 Uso con Docker
+
+### Desarrollo
+
+Para trabajar completamente dentro de contenedores, utiliza la configuración de desarrollo:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+La base de datos se expone en el puerto `5433` del equipo anfitrión y utiliza las credenciales locales indicadas anteriormente. La aplicación queda disponible en **http://localhost:3000**.
+
+### Producción
 
 Si prefieres no instalar Ruby ni PostgreSQL en tu máquina, hemos incluido una configuración completa de Docker para arrancar la aplicación en modo producción en un solo paso.
 
-### Pasos con Docker Compose
 Asegúrate de tener **Docker** y **Docker Compose** instalados.
 
-1. Construye e inicia los contenedores en segundo plano:
+1. Define una contraseña segura para PostgreSQL y construye los contenedores:
    ```bash
-   docker-compose up --build -d
+   export POSTGRES_PASSWORD='usa-una-contraseña-segura'
+   docker compose up --build -d
    ```
 2. Espera unos segundos mientras se construye la imagen (esto compilará automáticamente los archivos React y preparará la base de datos).
 3. Accede a la aplicación en: **http://localhost:3000**
 4. *Opcional*: Si es la primera vez que instalas la aplicación y la base de datos no se ha poblado automáticamente con los datos de prueba, puedes forzar la ejecución del Seed con:
    ```bash
-   docker-compose exec web bin/rails db:seed
+   docker compose exec web bin/rails db:seed
    ```
 5. Para detener la aplicación:
    ```bash
-   docker-compose down
+   docker compose down
    ```
 
-*(Nota: El archivo `docker-compose.yml` está pre-configurado para conectarse automáticamente a una base de datos PostgreSQL en contenedor, montar el archivo master.key y preparar todo de forma casi transparente).*
+`POSTGRES_PASSWORD` es obligatoria para esta configuración y no utiliza la contraseña predeterminada de desarrollo.
