@@ -68,17 +68,19 @@ function Empty({
   title = "No hay datos", 
   description = "No se encontraron registros para mostrar.", 
   type = 'box',
-  colSpan = 100 
+  colSpan = 100,
+  icon
 }: { 
   title?: string, 
   description?: string, 
   type?: 'box' | 'search',
-  colSpan?: number 
+  colSpan?: number,
+  icon?: ReactNode
 }) {
   return (
     <tr>
       <td colSpan={colSpan} className="p-0 border-b-0">
-        <EmptyState title={title} description={description} type={type} />
+        <EmptyState title={title} description={description} type={type} icon={icon} />
       </td>
     </tr>
   )

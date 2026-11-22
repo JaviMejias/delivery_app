@@ -19,6 +19,11 @@ class Material < ApplicationRecord
   scope :ordered_by_name, -> { order(:name, :measure) }
 
   def full_name
-    [ name, "#{measure}#{unit}".presence ].compact.join(" ")
+    formatted_measure = if measure.present?
+      measure == measure.to_i ? measure.to_i.to_s : measure.to_s.sub(/\.?0+\z/, "")
+    end
+    formatted_unit = unit if unit.present? && unit != "UN"
+
+    [ name, formatted_measure, formatted_unit ].compact.join(" ")
   end
 end

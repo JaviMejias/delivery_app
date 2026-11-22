@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
 import { confirmDelete } from '@/utils/alerts'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
@@ -29,7 +29,6 @@ export default function PriceListsIndex({ priceLists, pagination, currentSearch 
   const [editingList, setEditingList] = useState<PriceList | null>(null)
   const [search, setSearch] = useState(currentSearch || '')
   const [isFiltering, setIsFiltering] = useState(false)
-  const formRef = useRef<HTMLDivElement>(null)
 
   const applyFilters = () => {
     router.get('/catalog/price-lists', { search }, { 
@@ -55,9 +54,6 @@ export default function PriceListsIndex({ priceLists, pagination, currentSearch 
       available_for_local: list.available_for_local || false
     })
 
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
   }
 
   const cancelEdit = () => {
@@ -102,7 +98,7 @@ export default function PriceListsIndex({ priceLists, pagination, currentSearch 
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1" ref={formRef}>
+          <div className="lg:col-span-1">
             <Card className={editingList ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${

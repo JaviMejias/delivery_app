@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
@@ -18,7 +18,6 @@ export default function CompaniesIndex({ companies, pagination, currentSearch }:
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
   const [search, setSearch] = useState(currentSearch || '')
   const [isFiltering, setIsFiltering] = useState(false)
-  const formRef = useRef<HTMLDivElement>(null)
 
   const applyFilters = () => {
     router.get('/companies', { search }, { 
@@ -60,9 +59,6 @@ export default function CompaniesIndex({ companies, pagination, currentSearch }:
       company_phones_attributes: company.company_phones?.map((p: any) => ({ id: p.id, number: p.number, label: p.label || '' })) || []
     })
 
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
   }
 
   const cancelEdit = () => {
@@ -102,7 +98,7 @@ export default function CompaniesIndex({ companies, pagination, currentSearch }:
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1" ref={formRef}>
+          <div className="lg:col-span-1">
             <CompanyForm
               form={form}
               editingCompany={editingCompany}

@@ -57,7 +57,7 @@ class TrucksController < ApplicationController
         products: brand_products.map do |p|
           {
             id: p.id,
-            name: p.name,
+            name: p.material&.full_name || p.name,
             kg: p.material&.measure.to_f,
             sku: p.sku,
             image_url: p.image&.attached? ? url_for(p.image) : nil
@@ -77,10 +77,10 @@ class TrucksController < ApplicationController
 
     locations_data = trucks.map do |truck|
       products = Inventory.products_for(truck.warehouse).map do |inv|
-        { name: inv.item.name, quantity: inv.quantity }
+        { name: inv.item.full_name, quantity: inv.quantity }
       end
       materials = Inventory.materials_for(truck.warehouse).map do |inv|
-        { name: inv.item.name, quantity: inv.quantity }
+        { name: inv.item.full_name, quantity: inv.quantity }
       end
       today = Time.current.beginning_of_day..Time.current.end_of_day
       truck_orders_today = CustomerOrder.where(company_id: current_tenant.id, truck_id: truck.id, created_at: today)
@@ -134,9 +134,23 @@ class TrucksController < ApplicationController
                                  .select(:id, :client_name, :address, :latitude, :longitude, :status, :truck_id, :details, :created_at)
                                  .order(created_at: :asc)
 
+    orders_json = active_orders.as_json
+    product_ids = orders_json.flat_map do |order|
+      (order.dig("details", "items") || []).map { |item| item["product_id"] || item["id"] }
+    end.compact.uniq
+    product_names = Product.includes(:material, :brand).where(id: product_ids).each_with_object({}) do |product, names|
+      names[product.id] = product.full_name
+    end
+    orders_json.each do |order|
+      (order.dig("details", "items") || []).each do |item|
+        product_id = item["product_id"] || item["id"]
+        item["name"] = product_names[product_id] if product_names[product_id]
+      end
+    end
+
     render json: {
       trucks: locations_data,
-      orders: active_orders.as_json
+      orders: orders_json
     }
   end
 

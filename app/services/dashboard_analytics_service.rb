@@ -168,7 +168,7 @@ class DashboardAnalyticsService
     query = query.where(warehouse_id: @warehouse_id) if @warehouse_id
 
     stock_by_product = query.group(:item_id).sum(:quantity)
-    products = Product.where(id: stock_by_product.keys).index_by(&:id)
+    products = Product.includes(:material, :brand).where(id: stock_by_product.keys).index_by(&:id)
 
     critical_items = []
     stock_by_product.each do |product_id, qty|
@@ -179,7 +179,7 @@ class DashboardAnalyticsService
       
       if qty <= threshold
         critical_items << {
-          name: product.name,
+          name: product.full_name,
           sku: product.sku,
           stock: qty.to_i,
           threshold: threshold,

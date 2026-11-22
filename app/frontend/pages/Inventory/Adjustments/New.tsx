@@ -20,8 +20,6 @@ interface Material {
 interface Product {
   id: number
   name: string
-  material_name: string
-  brand_name: string
 }
 
 interface Props {
@@ -173,12 +171,12 @@ export default function NewInventoryAdjustment({ warehouses, materials, products
                       <label className="text-sm font-medium text-[var(--sf-text-muted)] uppercase tracking-wider">Seleccionar Ítem</label>
                       <CustomSelect
                         options={data.item_type === 'Product' 
-                          ? products.map(p => ({ value: p.id.toString(), label: `${p.name} (${p.brand_name})` }))
-                          : materials.map(m => ({ value: m.id.toString(), label: `${m.name}${m.measure ? ` ${m.measure}` : ''}${m.unit && m.unit !== 'UN' ? ` ${m.unit}` : ''}` }))
+                          ? products.map(p => ({ value: p.id.toString(), label: p.name }))
+                          : materials.map(m => ({ value: m.id.toString(), label: m.name }))
                         }
                         value={(data.item_type === 'Product' 
-                          ? products.map(p => ({ value: p.id.toString(), label: `${p.name} (${p.brand_name})` }))
-                          : materials.map(m => ({ value: m.id.toString(), label: `${m.name}${m.measure ? ` ${m.measure}` : ''}${m.unit && m.unit !== 'UN' ? ` ${m.unit}` : ''}` }))
+                          ? products.map(p => ({ value: p.id.toString(), label: p.name }))
+                          : materials.map(m => ({ value: m.id.toString(), label: m.name }))
                         ).find(o => o.value === data.item_id?.toString()) || null}
                         onChange={(val: any) => setData('item_id', val ? val.value : '')}
                         placeholder={`Seleccione un ${data.item_type === 'Product' ? 'producto' : 'envase'}...`}

@@ -72,7 +72,21 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [notes, setNotes] = useState('')
   const [quickOrder, setQuickOrder] = useState(reorder_data?.details?.quick_order || '')
-  const [cart, setCart] = useState<CartItem[]>(reorder_data?.details?.items || [])
+  const [cart, setCart] = useState<CartItem[]>(
+    (reorder_data?.details?.items || []).map((item: any) => {
+      const productId = item.product_id || item.id
+      const catalogBrand = brands.find(brand => brand.products.some(product => product.id === productId))
+      const catalogProduct = catalogBrand?.products.find(product => product.id === productId)
+
+      return {
+        ...item,
+        product_id: productId,
+        name: catalogProduct?.name || item.name,
+        kg: catalogProduct?.kg || item.kg,
+        brand_name: catalogBrand?.name || item.brand_name || item.brand || ''
+      }
+    })
+  )
   const [latitude, setLatitude] = useState<number | null>(reorder_data?.latitude ? parseFloat(reorder_data.latitude) : (current_customer?.latitude ? parseFloat(current_customer.latitude) : null))
   const [longitude, setLongitude] = useState<number | null>(reorder_data?.longitude ? parseFloat(reorder_data.longitude) : (current_customer?.longitude ? parseFloat(current_customer.longitude) : null))
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
@@ -345,7 +359,16 @@ export default function PublicOrderNew({ company, brands, current_customer, cust
 
   const getDetails = () => {
     if (mode === 'quick') return { quick_order: quickOrder }
-    return { items: cartItems.map(i => ({ id: i.product_id, name: i.name, quantity: i.quantity, kg: i.kg, brand: i.brand_name })) }
+    return {
+      items: cartItems.map(i => ({
+        id: i.product_id,
+        product_id: i.product_id,
+        name: i.name,
+        quantity: i.quantity,
+        kg: i.kg,
+        brand: i.brand_name
+      }))
+    }
   }
 
   const toggleDictation = () => {

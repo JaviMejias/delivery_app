@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Head, useForm, router } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
@@ -31,7 +31,6 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null)
   const [search, setSearch] = useState(currentSearch || '')
   const [isFiltering, setIsFiltering] = useState(false)
-  const formRef = useRef<HTMLDivElement>(null)
 
   const applyFilters = () => {
     router.get('/inventory/warehouses', { search }, { 
@@ -63,9 +62,6 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
       longitude: warehouse.longitude || ''
     })
 
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
   }
 
   const cancelEdit = () => {
@@ -110,7 +106,7 @@ export default function WarehousesIndex({ warehouses, pagination, currentSearch 
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
-          <div className="lg:col-span-1" ref={formRef}>
+          <div className="lg:col-span-1">
             <Card className={editingWarehouse ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'}>
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${

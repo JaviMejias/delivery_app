@@ -11,6 +11,13 @@ class Driver::RadarController < ApplicationController
       pending_transition&.update!(status: :in_transit)
     end
     active_order = truck ? CustomerOrder.active_for_truck(truck).first : nil
+    pending_order_records = CustomerOrder.pending_for_company(current_tenant.id)
+      .where("truck_id IS NULL OR truck_id = ?", truck&.id)
+      .order(created_at: :asc)
+      .limit(30)
+      .to_a
+    order_display = OrderDetailsDisplayService.call([ active_order ] + pending_order_records, current_tenant)
+
     truck_data = if truck
       {
         id: truck.id,
@@ -24,33 +31,29 @@ class Driver::RadarController < ApplicationController
         destination_address: truck.destination_address,
         route_points: truck.route_points ? JSON.parse(truck.route_points) : nil,
         active_order_id: active_order&.id,
-        active_order_summary: active_order&.summary_text,
+        active_order_summary: active_order ? order_display[active_order.id][:summary] : nil,
         active_order_phone: active_order&.phone,
         inventory: current_truck_inventory
       }
     else
       { id: nil, plate_number: "Sin camión", latitude: nil, longitude: nil, has_destination: false, destination_latitude: nil, destination_longitude: nil, destination_client_name: nil, destination_address: nil, route_points: nil, active_order_id: nil, active_order_summary: nil, active_order_phone: nil, inventory: [] }
     end
-    pending_orders = CustomerOrder.pending_for_company(current_tenant.id)
-      .where("truck_id IS NULL OR truck_id = ?", truck&.id)
-      .order(created_at: :asc)
-      .limit(30)
-      .map do |order|
-        {
-          id: order.id,
-          client_name: order.client_name,
-          phone: order.phone,
-          address: order.address,
-          latitude: order.latitude.to_f,
-          longitude: order.longitude.to_f,
-          summary: order.summary_text,
-          details: order.details,
-          notes: order.notes,
-          created_at: order.created_at,
-          distance_km: truck ? estimate_distance(truck, order) : nil,
-          is_proposed: order.truck_id == truck&.id
-        }
-      end
+    pending_orders = pending_order_records.map do |order|
+      {
+        id: order.id,
+        client_name: order.client_name,
+        phone: order.phone,
+        address: order.address,
+        latitude: order.latitude.to_f,
+        longitude: order.longitude.to_f,
+        summary: order_display[order.id][:summary],
+        details: order_display[order.id][:details],
+        notes: order.notes,
+        created_at: order.created_at,
+        distance_km: truck ? estimate_distance(truck, order) : nil,
+        is_proposed: order.truck_id == truck&.id
+      }
+    end
 
     render json: { orders: pending_orders, truck: truck_data }
   end
@@ -224,7 +227,7 @@ class Driver::RadarController < ApplicationController
   def current_truck_inventory
     return [] unless @current_truck&.warehouse
     Inventory.products_for(@current_truck.warehouse).map do |inv|
-      { name: inv.item.name, quantity: inv.quantity, item_id: inv.item.id }
+      { name: inv.item.full_name, quantity: inv.quantity, item_id: inv.item.id }
     end
   end
 

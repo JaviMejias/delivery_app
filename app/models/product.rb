@@ -13,4 +13,8 @@ class Product < ApplicationRecord
   scope :search_by_name_or_sku, ->(query) { where("name ILIKE :q OR sku ILIKE :q", q: "%#{query}%") if query.present? }
   scope :with_details, -> { includes(:material, :brand, :product_prices) }
   scope :ordered_by_name, -> { joins(:material).order("materials.measure ASC", :name) }
+
+  def full_name
+    [ material&.full_name, brand&.name ].compact.join(" ").presence || name
+  end
 end

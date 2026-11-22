@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Head, useForm, router, Link } from '@inertiajs/react'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import PageHeader from '@/components/PageHeader'
@@ -72,7 +72,6 @@ const formatPlate = (value: string): string => {
 
 export default function TrucksIndex({ trucks, drivers, assigned_driver_ids, base_warehouses, pagination, currentSearch, currentWarehouseId }: Props) {
   const [editingTruck, setEditingTruck] = useState<Truck | null>(null)
-  const formRef = useRef<HTMLDivElement>(null)
 
   const { data, setData, post, patch, processing, reset, errors, clearErrors } = useForm({
     plate_number: '',
@@ -193,9 +192,6 @@ export default function TrucksIndex({ trucks, drivers, assigned_driver_ids, base
       mileage_update_frequency: truck.mileage_update_frequency || 'weekly'
     })
     
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
   }
 
   const cancelEdit = () => {
@@ -242,7 +238,7 @@ export default function TrucksIndex({ trucks, drivers, assigned_driver_ids, base
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
-          <div className="lg:col-span-1" ref={formRef}>
+          <div className="lg:col-span-1">
             <Card className={editingTruck ? 'ring-2 ring-primary-500 shadow-[0_0_30px_rgba(99,102,241,0.2)] transition-all duration-300' : 'transition-all duration-300'} >
               <Card.Body>
                 <div className={`flex items-center gap-3 p-4 mb-4 rounded-xl border ${

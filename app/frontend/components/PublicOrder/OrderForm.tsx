@@ -327,7 +327,7 @@ export default function OrderForm({
                         <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-orange-500 font-black border border-white/5">
                           {item.quantity}
                         </div>
-                        <span className="text-slate-200">{item.name} <span className="text-slate-500 text-xs ml-1">({item.brand_name})</span></span>
+                        <span className="text-slate-200">{item.name}</span>
                       </div>
                     </li>
                   ))}

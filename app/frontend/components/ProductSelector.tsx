@@ -247,7 +247,7 @@ export default function ProductSelector({ brands, cart, updateCart }: ProductSel
                 key={item.product_id} 
                 className="flex justify-between items-center text-sm bg-black/20 p-2 rounded-xl border border-white/5"
               >
-                <span className="text-white font-bold">{item.quantity}x <span className="text-slate-400 font-medium">{item.brand_name} {item.name}</span></span>
+                <span className="text-white font-bold">{item.quantity}x <span className="text-slate-400 font-medium">{item.name}</span></span>
                 <button
                   onClick={(e) => { e.preventDefault(); updateCart({ id: item.product_id } as any, item.brand_name, -item.quantity) }}
                   className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase px-2 py-1 bg-red-400/10 rounded-lg active:scale-95 transition-colors"

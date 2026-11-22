@@ -1115,10 +1115,10 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
   const selectedTruck = trucks.find(t => t.id === selectedTruckId)
 
   return (
-    <AuthenticatedLayout>
+    <AuthenticatedLayout hideHeader>
       <Head title="Mapa de Flota en Vivo" />
       
-      <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
+      <div className="flex flex-col h-full min-h-0 overflow-hidden">
         
         {/* Header Superior */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--sf-border)] bg-[var(--sf-surface)]/40 backdrop-blur-xl shrink-0">
@@ -1778,19 +1778,19 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
 
         {/* Modal UI */}
         {isOrderModalOpen && (
-          <div className="absolute inset-0 z-[1000] bg-[var(--sf-surface)] backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl p-6 w-full max-w-md md:max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 lg:p-4">
+            <div className="bg-[var(--sf-surface)] border border-[var(--sf-border)] rounded-2xl p-4 lg:p-5 w-full max-w-md md:max-w-4xl shadow-2xl max-h-[calc(100%-1.5rem)] lg:max-h-[calc(100%-2rem)] min-h-0 flex flex-col">
               <h2 className="text-xl font-black text-[var(--sf-text-main)] mb-2 flex items-center gap-2 shrink-0">
                 <Package className="text-primary-400" /> Crear Pedido Manual
               </h2>
               
-              <div className="flex items-center gap-2 mb-6 shrink-0">
+              <div className="flex items-center gap-2 mb-3 shrink-0">
                 <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 1 ? 'bg-primary-500' : 'bg-white/10'}`} />
                 <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 2 ? 'bg-primary-500' : 'bg-white/10'}`} />
                 <div className={`h-1.5 flex-1 rounded-full ${orderStep >= 3 ? 'bg-primary-500' : 'bg-white/10'}`} />
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
                 {orderStep === 1 && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className={`p-3 rounded-xl flex items-center justify-between border ${
@@ -1838,19 +1838,19 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                         <button
                           type="button"
                           onClick={async () => {
+                            setIsOrderModalOpen(false);
+                            setIsCapturingCoords(true);
                             if (!newOrderForm.address) return;
+
                             try {
                               const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newOrderForm.address + ', Chile')}`);
                               const data = await res.json();
                               if (data && data.length > 0) {
                                 const lat = parseFloat(data[0].lat);
                                 const lon = parseFloat(data[0].lon);
-                                  // We do NOT place tempMarker anymore, just go into map capture mode centered there.
-                                  setIsOrderModalOpen(false);
-                                  setIsCapturingCoords(true);
-                                  if (mapRef.current) {
-                                    mapRef.current.flyTo([lat, lon], 17);
-                                  }
+                                if (mapRef.current) {
+                                  mapRef.current.flyTo([lat, lon], 17);
+                                }
                               } else {
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'No se encontró la dirección en el mapa', showConfirmButton: false, timer: 3000, background: 'var(--sf-glass-panel-bg1)', color: 'white' });
                               }
@@ -1967,7 +1967,7 @@ export default function TrucksMap({ company_id, brands = [] }: Props) {
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-[var(--sf-border)] mt-4 shrink-0">
+              <div className="flex gap-3 pt-3 border-t border-[var(--sf-border)] mt-3 shrink-0">
                 {orderStep === 1 ? (
                   <button type="button" onClick={() => { setIsOrderModalOpen(false); setOrderStep(1); }} className="flex-1 py-2.5 rounded-xl border border-[var(--sf-border)] hover:bg-white/5 text-gray-300 font-bold transition-colors">Cancelar</button>
                 ) : (

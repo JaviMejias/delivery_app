@@ -11,7 +11,7 @@ module Public
             products: brand_products.map do |p|
               {
                 id: p.id,
-                name: p.name,
+                name: p.full_name,
                 kg: p.material&.measure.to_f,
                 sku: p.sku,
                 image_url: p.image&.attached? ? Rails.application.routes.url_helpers.rails_blob_path(p.image, only_path: true) : nil

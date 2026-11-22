@@ -15,9 +15,7 @@ class InventoryAdjustmentsController < ApplicationController
       products: products.map do |p|
         {
           id: p.id,
-          name: p.name,
-          material_name: p.material&.name,
-          brand_name: p.brand&.name
+          name: p.full_name
         }
       end
     }

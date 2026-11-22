@@ -8,7 +8,7 @@ import Table from '@/components/Table'
 import { TableFilters } from '@/components/TableFilters'
 import { CustomDatePicker } from '@/components/CustomDatePicker'
 import { router } from '@inertiajs/react'
-import { Store, Printer, XCircle } from 'lucide-react'
+import { Store, Printer, XCircle, ReceiptText } from 'lucide-react'
 import BoletaTicket from '@/components/BoletaTicket'
 import { formatCLP } from '@/utils/formatters'
 import { useExcelExport } from '@/hooks/useExcelExport'
@@ -198,6 +198,7 @@ export default function LocalSalesIndex({ sales, pagination, currentSearch }: Pr
                 <Table.Empty
                   title="No hay ventas locales"
                   description="No se encontraron ventas registradas en este período."
+                  icon={<ReceiptText className="w-14 h-14" strokeWidth={1.5} />}
                   colSpan={6}
                 />
               ) : (
